@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kindo Mall</title>
-    <!-- Favicon Dinámico con una K roja -->
+    <title>Kindo Mall | Catálogo Digital</title>
     <link id="favicon" rel="icon" type="image/png" href="">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -17,17 +16,8 @@
             overflow-x: hidden;
         }
         .kindo-bg-red { background-color: var(--kindo-red); }
-        .kindo-text-red { color: var(--kindo-red); }
-        
-        /* Estilo de pestañas */
-        .tab-btn {
-            position: relative;
-            transition: all 0.2s ease;
-        }
-        .tab-active {
-            color: var(--kindo-red);
-            font-weight: 800;
-        }
+        .tab-btn { position: relative; transition: all 0.2s ease; }
+        .tab-active { color: var(--kindo-red); font-weight: 800; }
         .tab-active::after {
             content: '';
             position: absolute;
@@ -38,11 +28,8 @@
             background: var(--kindo-red);
             border-radius: 10px;
         }
-
-        /* Animaciones */
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
         .loading-spinner {
             border: 3px solid #f3f3f3;
             border-top: 3px solid var(--kindo-red);
@@ -52,7 +39,6 @@
             animation: spin 0.8s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -60,15 +46,13 @@
             backdrop-filter: blur(4px);
             z-index: 100;
             display: none;
-            align-items: center;
-            justify-content: center;
+            align-items: center; justify-content: center;
         }
         .modal-active { display: flex !important; }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
 
-    <!-- Header Fijo -->
     <header class="bg-white/95 backdrop-blur-md sticky top-0 z-40 border-b border-gray-100">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-2">
@@ -91,7 +75,6 @@
         </div>
     </header>
 
-    <!-- Buscador -->
     <div class="px-4 pt-4 sticky top-[97px] z-30 bg-white pb-2">
         <div class="relative max-w-2xl mx-auto">
             <input type="text" id="search" oninput="render()" placeholder="¿Qué buscas hoy?" class="w-full pl-10 pr-4 py-3 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none text-sm transition-all shadow-inner">
@@ -99,18 +82,15 @@
         </div>
     </div>
 
-    <!-- Contenido Principal -->
     <main class="container mx-auto px-4 py-4 flex-grow">
         <div id="grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            <!-- Cargador con tiempo de espera reducido para ngrok -->
             <div id="loader" class="col-span-full py-24 flex flex-col items-center justify-center">
                 <div class="loading-spinner mb-4"></div>
-                <p class="text-[10px] text-gray-400 font-bold tracking-[0.2em] uppercase italic">Sincronizando...</p>
+                <p class="text-[10px] text-gray-400 font-bold tracking-[0.2em] uppercase italic">Sincronizando catálogo...</p>
             </div>
         </div>
     </main>
 
-    <!-- Footer -->
     <footer class="bg-gray-50 py-12 border-t border-gray-100 mb-20 md:mb-0">
         <div class="text-center px-4">
             <div class="inline-block bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
@@ -121,12 +101,11 @@
         </div>
     </footer>
 
-    <!-- Botón WhatsApp -->
     <a href="https://wa.me/18292634234" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl z-50 active:scale-90 transition-transform">
         <i class="fa-brands fa-whatsapp text-3xl"></i>
     </a>
 
-    <!-- Modales -->
+    <!-- Modales de Admin -->
     <div id="m-login" class="modal-overlay px-4" onclick="if(event.target==this) closeModals()">
         <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl">
             <h2 class="text-center font-black text-xl mb-6">ADMINISTRACIÓN</h2>
@@ -167,34 +146,29 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Icono de carga inmediata
-        const generateFavicon = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64; canvas.height = 64;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#e11d48';
-            ctx.beginPath(); ctx.roundRect(0, 0, 64, 64, 15); ctx.fill();
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 45px Arial Black';
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText('K', 32, 35);
-            document.getElementById('favicon').href = canvas.toDataURL('image/png');
-        };
-        generateFavicon();
+        // CONFIGURACIÓN DINÁMICA: Prioriza el entorno, pero evita colgarse
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "N/A",
+                authDomain: "N/A",
+                projectId: "N/A",
+                storageBucket: "N/A",
+                messagingSenderId: "N/A",
+                appId: "N/A"
+            };
 
-        const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kindo-mall-pro';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kindo-mall-prod';
 
         let products = [];
         let floor = 1;
         let isFirstLoad = true;
 
-        // FUNCIÓN CLAVE: Fuerza la desaparición del cargador si ngrok tarda
         const forceUIRender = () => {
             if (isFirstLoad) {
                 isFirstLoad = false;
@@ -204,10 +178,10 @@
             }
         };
 
-        // Reducido a 600ms para mejorar la respuesta en túneles ngrok
-        setTimeout(forceUIRender, 600);
+        // Reducimos el tiempo a 1.5s para que no se quede cargando infinito
+        setTimeout(forceUIRender, 1500);
 
-        const init = async () => {
+        const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
@@ -215,13 +189,13 @@
                     await signInAnonymously(auth);
                 }
             } catch (e) {
-                console.warn("Auth delay", e);
-                forceUIRender();
+                console.warn("Auth Fallback:", e.message);
+                forceUIRender(); // Si falla la auth, quitar el loader igual
             }
         };
 
-        onAuthStateChanged(auth, (u) => {
-            if (u) {
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
                 document.getElementById('conn-dot').style.backgroundColor = '#22c55e';
                 const q = collection(db, 'artifacts', appId, 'public', 'data', 'products');
                 
@@ -231,37 +205,37 @@
                     if(document.getElementById('m-admin').classList.contains('modal-active')) renderAdmin();
                 }, (err) => {
                     console.error("Firestore Error:", err);
-                    forceUIRender();
+                    forceUIRender(); // Si falla el snapshot, quitar el loader
                 });
+            } else {
+                initAuth();
             }
         });
 
         window.render = () => {
             const grid = document.getElementById('grid');
             if (!grid) return;
-            
             const search = document.getElementById('search').value.toLowerCase();
             const filtered = products.filter(p => p.floor == floor && (p.name || '').toLowerCase().includes(search));
 
             if(filtered.length === 0 && !isFirstLoad) {
                 grid.innerHTML = `
-                    <div class="col-span-full py-20 text-center fade-in">
-                        <i class="fa-solid fa-box-open text-gray-100 text-6xl mb-4"></i>
-                        <p class="text-gray-300 text-xs font-bold uppercase tracking-widest">Sin productos en este piso</p>
-                    </div>
-                `;
+                    <div class="col-span-full py-20 text-center flex flex-col items-center">
+                        <i class="fa-solid fa-box-open text-gray-200 text-5xl mb-4"></i>
+                        <p class="text-gray-300 text-xs font-bold uppercase tracking-widest">No hay productos disponibles</p>
+                    </div>`;
                 return;
             }
 
             grid.innerHTML = filtered.map(p => `
-                <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col fade-in shadow-sm hover:shadow-md transition-shadow">
+                <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col fade-in shadow-sm">
                     <div class="relative pt-[100%] bg-gray-50 overflow-hidden">
-                        <img src="${p.img}" class="absolute inset-0 w-full h-full object-cover transition-transform hover:scale-110 duration-500" loading="lazy" onerror="this.src='https://via.placeholder.com/300x300/f8fafc/e11d48?text=KINDO'">
+                        <img src="${p.img}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/400?text=Kindo+Mall'">
                     </div>
                     <div class="p-3 flex flex-col flex-grow">
                         <h3 class="font-bold text-[10px] text-gray-800 uppercase line-clamp-2 min-h-[28px] leading-tight">${p.name}</h3>
-                        <p class="text-rose-600 font-black text-sm my-2 italic">RD$ ${p.price.toLocaleString()}</p>
-                        <a href="https://wa.me/18292634234?text=${encodeURIComponent('Hola Kindo! Me interesa: ' + p.name)}" target="_blank" class="block w-full text-center py-2.5 bg-gray-900 text-white text-[9px] font-black uppercase tracking-widest rounded-xl active:scale-95 transition-transform">Lo quiero</a>
+                        <p class="text-rose-600 font-black text-sm my-2">RD$ ${Number(p.price).toLocaleString()}</p>
+                        <a href="https://wa.me/18292634234?text=Hola Kindo! Me interesa: ${encodeURIComponent(p.name)}" target="_blank" class="block w-full text-center py-2.5 bg-gray-900 text-white text-[9px] font-black uppercase tracking-widest rounded-xl">Consultar</a>
                     </div>
                 </div>
             `).join('');
@@ -275,7 +249,7 @@
         };
 
         window.openAdmin = () => {
-            if(localStorage.getItem('kindo_adm_v2') === 'true') {
+            if(localStorage.getItem('kindo_admin_v3') === 'true') {
                 document.getElementById('m-admin').classList.add('modal-active');
                 renderAdmin();
             } else {
@@ -288,45 +262,42 @@
         };
 
         window.login = () => {
-            const u = document.getElementById('u-in').value;
-            const p = document.getElementById('p-in').value;
-            if(u === 'admin' && p === 'admin12') {
-                localStorage.setItem('kindo_adm_v2', 'true');
+            if(document.getElementById('u-in').value === 'admin' && document.getElementById('p-in').value === 'admin12') {
+                localStorage.setItem('kindo_admin_v3', 'true');
                 closeModals();
                 openAdmin();
-            } else { alert('Credenciales incorrectas'); }
+            } else { alert('Acceso denegado'); }
         };
 
-        window.logout = () => { localStorage.removeItem('kindo_adm_v2'); closeModals(); };
+        window.logout = () => { localStorage.removeItem('kindo_admin_v3'); closeModals(); };
 
         window.renderAdmin = () => {
             const list = document.getElementById('admin-list');
-            list.innerHTML = products.sort((a,b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0)).map(p => `
+            list.innerHTML = products.map(p => `
                 <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
                     <div class="flex items-center space-x-3 truncate">
                         <img src="${p.img}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gray-50">
                         <div class="truncate">
-                            <p class="font-bold text-[10px] uppercase truncate text-gray-700">${p.name}</p>
+                            <p class="font-bold text-[10px] uppercase truncate">${p.name}</p>
                             <p class="text-[9px] text-gray-400 font-bold">PISO ${p.floor} • RD$ ${p.price}</p>
                         </div>
                     </div>
-                    <div class="flex space-x-1 pl-2">
-                        <button onclick="editP('${p.id}')" class="w-8 h-8 flex items-center justify-center text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button onclick="delP('${p.id}')" class="w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-lg transition-colors"><i class="fa-solid fa-trash"></i></button>
+                    <div class="flex space-x-2">
+                        <button onclick="editP('${p.id}')" class="text-blue-500 p-2"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="delP('${p.id}')" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>
             `).join('');
         };
 
         window.delP = async (id) => { 
-            if(confirm('¿Borrar producto?')) {
+            if(confirm('¿Eliminar producto?')) {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id));
             }
         };
 
         window.editP = (id) => {
             const p = products.find(x => x.id === id);
-            if(!p) return;
             document.getElementById('f-id').value = p.id;
             document.getElementById('f-name').value = p.name;
             document.getElementById('f-price').value = p.price;
@@ -338,31 +309,25 @@
         document.getElementById('prod-form').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('f-btn');
-            btn.disabled = true; 
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Guardando...';
-            
+            btn.disabled = true;
             try {
                 const id = document.getElementById('f-id').value || Date.now().toString();
                 const data = {
-                    name: document.getElementById('f-name').value.trim(),
+                    name: document.getElementById('f-name').value,
                     price: Number(document.getElementById('f-price').value),
                     floor: Number(document.getElementById('f-floor').value),
-                    img: document.getElementById('f-img').value.trim(),
+                    img: document.getElementById('f-img').value,
                     updatedAt: serverTimestamp()
                 };
-
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id), data);
                 document.getElementById('prod-form').reset();
                 document.getElementById('f-id').value = '';
             } catch (err) {
-                alert("Error: Revisa la conexión o permisos.");
+                alert("Error de conexión. Intente de nuevo.");
             } finally {
-                btn.disabled = false; 
-                btn.innerText = 'Guardar Producto';
+                btn.disabled = false;
             }
         };
-
-        init();
     </script>
 </body>
-</html
+</html>
