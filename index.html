@@ -2,365 +2,119 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kindo Mall | Catálogo Digital</title>
-    <link id="favicon" rel="icon" type="image/png" href="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kindo Mall | Santiago</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --kindo-red: #e11d48; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #ffffff;
-            -webkit-tap-highlight-color: transparent;
-            overflow-x: hidden;
-        }
-        .kindo-bg-red { background-color: var(--kindo-red); }
-        .tab-btn { position: relative; transition: all 0.2s ease; }
-        .tab-active { color: var(--kindo-red); font-weight: 800; }
-        .tab-active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 25%;
-            width: 50%;
-            height: 3px;
-            background: var(--kindo-red);
-            border-radius: 10px;
-        }
-        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--kindo-red);
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            z-index: 100;
-            display: none;
-            align-items: center; justify-content: center;
-        }
-        .modal-active { display: flex !important; }
-        .map-container iframe {
-            width: 100%;
-            height: 350px;
-            border-radius: 24px;
-            border: none;
-        }
+        .kindo-red { background-color: #e11d48; }
+        .text-kindo { color: #e11d48; }
+        body { font-family: sans-serif; }
     </style>
 </head>
-<body class="flex flex-col min-h-screen">
+<body class="bg-gray-100">
 
-    <header class="bg-white/95 backdrop-blur-md sticky top-0 z-40 border-b border-gray-100">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 kindo-bg-red rounded-lg flex items-center justify-center shadow-lg shadow-rose-200">
-                    <span class="text-white font-black text-xl">K</span>
-                </div>
-                <h1 class="text-xl font-black text-gray-900 tracking-tighter">KINDO MALL</h1>
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 kindo-red rounded-lg flex items-center justify-center text-white font-bold text-2xl">K</div>
+                <h1 class="font-black text-xl tracking-tighter">KINDO MALL</h1>
             </div>
-            <div class="flex items-center space-x-3">
-                <div id="conn-dot" class="w-2 h-2 rounded-full bg-gray-300 transition-colors duration-500"></div>
-                <button onclick="openAdmin()" class="text-gray-400 hover:text-rose-600 transition-colors">
-                    <i class="fa-solid fa-user-shield text-lg"></i>
-                </button>
-            </div>
-        </div>
-        
-        <div class="flex bg-white border-b border-gray-50">
-            <button onclick="switchFloor(1)" id="t1" class="tab-btn flex-1 py-3 text-xs font-black uppercase tracking-widest tab-active">Piso 1</button>
-            <button onclick="switchFloor(2)" id="t2" class="tab-btn flex-1 py-3 text-xs font-black uppercase tracking-widest text-gray-400">Piso 2</button>
+            <a href="tel:18292634234" class="text-kindo font-bold text-sm underline">Llamar ahora</a>
         </div>
     </header>
 
-    <div class="px-4 pt-4 sticky top-[97px] z-30 bg-white pb-2">
-        <div class="relative max-w-2xl mx-auto">
-            <input type="text" id="search" oninput="render()" placeholder="¿Qué buscas hoy?" class="w-full pl-10 pr-4 py-3 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none text-sm transition-all shadow-inner">
-            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 text-xs"></i>
-        </div>
-    </div>
+    <!-- Banner Principal -->
+    <section class="bg-white px-4 py-8 border-b text-center">
+        <span class="kindo-red text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest">Santiago, RD</span>
+        <h2 class="text-3xl font-black mt-4 leading-tight text-gray-900">EL MEJOR PRECIO<br>EN UN SOLO LUGAR</h2>
+        <p class="text-gray-500 mt-2 text-sm">Visítanos en la Av. Juan Pablo Duarte #15</p>
+    </section>
 
-    <main class="container mx-auto px-4 py-4 flex-grow">
-        <!-- Rejilla de Productos -->
-        <div id="grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            <div id="loader" class="col-span-full py-24 flex flex-col items-center justify-center">
-                <div class="loading-spinner mb-4"></div>
-                <p class="text-[10px] text-gray-400 font-bold tracking-[0.2em] uppercase italic">Sincronizando catálogo...</p>
-            </div>
-        </div>
-
-        <!-- Sección de Ubicación y Contacto -->
-        <section class="mt-16 mb-8 fade-in">
-            <div class="bg-gray-50 rounded-[2.5rem] p-6 md:p-12 border border-gray-100">
-                <div class="flex flex-col lg:flex-row gap-10 items-center">
-                    <div class="w-full lg:w-1/2 space-y-8 text-center lg:text-left">
-                        <div>
-                            <span class="inline-block px-4 py-1.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-widest italic mb-4">Visítanos</span>
-                            <h2 class="text-4xl font-black text-gray-900 leading-none tracking-tighter">ESTAMOS EN EL CORAZÓN DE <span class="text-rose-600 uppercase">SANTIAGO</span></h2>
-                        </div>
-                        
-                        <div class="space-y-6">
-                            <div class="flex items-start space-x-4 justify-center lg:justify-start">
-                                <div class="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-rose-600 flex-shrink-0">
-                                    <i class="fa-solid fa-location-dot text-xl"></i>
-                                </div>
-                                <div class="text-left">
-                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dirección</p>
-                                    <p class="text-sm font-bold text-gray-700 leading-snug">Av. Juan Pablo Duarte #15, Plaza Kindo Mall,<br>Santiago, República Dominicana</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start space-x-4 justify-center lg:justify-start">
-                                <div class="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-rose-600 flex-shrink-0">
-                                    <i class="fa-solid fa-clock text-xl"></i>
-                                </div>
-                                <div class="text-left">
-                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Horario Laboral</p>
-                                    <p class="text-sm font-bold text-gray-700 leading-snug">Lunes a Domingos:<br>9:00 AM - 9:00 PM</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-wrap gap-4 justify-center lg:justify-start pt-4">
-                            <!-- Enlace actualizado con la ubicación exacta proporcionada -->
-                            <a href="https://maps.app.goo.gl/aNGF1JV6jWR3FKtU7" target="_blank" class="bg-gray-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-gray-200 active:scale-95 transition-transform flex items-center">
-                                <i class="fa-solid fa-map-location-dot mr-2"></i> Ver Ubicación Exacta
-                            </a>
-                            <a href="tel:18292634234" class="bg-rose-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-transform flex items-center">
-                                <i class="fa-solid fa-phone mr-2"></i> Llamar Directo
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div class="w-full lg:w-1/2 map-container shadow-2xl shadow-rose-100 border-8 border-white rounded-[2.5rem] overflow-hidden">
-                        <!-- Mapa embebido -->
-                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3762.625345674321!2d-70.686523!3d19.45171!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8eb1cf0638b9759d%3A0x770387532f3e827a!2sSantiago%20De%20Los%20Caballeros!5e0!3m2!1ses!2sdo!4v1700000000000!5m2!1ses!2sdo" allowfullscreen="" loading="lazy"></iframe>
-                    </div>
+    <!-- Catálogo de Ejemplo (Fijo para que funcione siempre) -->
+    <main class="container mx-auto px-4 py-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Producto 1 -->
+            <div class="bg-white rounded-2xl p-2 shadow-sm">
+                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400" class="w-full aspect-square object-cover rounded-xl" alt="Tenis">
+                <div class="p-2">
+                    <h3 class="font-bold text-xs uppercase truncate">Tenis Deportivos</h3>
+                    <p class="text-kindo font-black text-lg">RD$ 2,500</p>
+                    <a href="https://wa.me/18292634234?text=Me interesa el producto: Tenis Deportivos" class="block w-full text-center py-2 bg-green-500 text-white rounded-lg text-xs font-bold mt-2">
+                        <i class="fab fa-whatsapp"></i> Pedir
+                    </a>
                 </div>
             </div>
-        </section>
+            <!-- Producto 2 -->
+            <div class="bg-white rounded-2xl p-2 shadow-sm">
+                <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400" class="w-full aspect-square object-cover rounded-xl" alt="Reloj">
+                <div class="p-2">
+                    <h3 class="font-bold text-xs uppercase truncate">Reloj Smart</h3>
+                    <p class="text-kindo font-black text-lg">RD$ 1,800</p>
+                    <a href="https://wa.me/18292634234?text=Me interesa el producto: Reloj Smart" class="block w-full text-center py-2 bg-green-500 text-white rounded-lg text-xs font-bold mt-2">
+                        <i class="fab fa-whatsapp"></i> Pedir
+                    </a>
+                </div>
+            </div>
+            <!-- Producto 3 -->
+            <div class="bg-white rounded-2xl p-2 shadow-sm">
+                <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400" class="w-full aspect-square object-cover rounded-xl" alt="Audifonos">
+                <div class="p-2">
+                    <h3 class="font-bold text-xs uppercase truncate">Audífonos Pro</h3>
+                    <p class="text-kindo font-black text-lg">RD$ 3,200</p>
+                    <a href="https://wa.me/18292634234?text=Me interesa el producto: Audífonos Pro" class="block w-full text-center py-2 bg-green-500 text-white rounded-lg text-xs font-bold mt-2">
+                        <i class="fab fa-whatsapp"></i> Pedir
+                    </a>
+                </div>
+            </div>
+            <!-- Producto 4 -->
+            <div class="bg-white rounded-2xl p-2 shadow-sm">
+                <img src="https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=400" class="w-full aspect-square object-cover rounded-xl" alt="Perfume">
+                <div class="p-2">
+                    <h3 class="font-bold text-xs uppercase truncate">Fragancias Selectas</h3>
+                    <p class="text-kindo font-black text-lg">RD$ 4,500</p>
+                    <a href="https://wa.me/18292634234?text=Me interesa el producto: Fragancias" class="block w-full text-center py-2 bg-green-500 text-white rounded-lg text-xs font-bold mt-2">
+                        <i class="fab fa-whatsapp"></i> Pedir
+                    </a>
+                </div>
+            </div>
+        </div>
     </main>
 
-    <footer class="bg-gray-50 py-12 border-t border-gray-100 mb-20 md:mb-0">
-        <div class="text-center px-4">
-            <div class="inline-block bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
-                <p class="text-[10px] font-black text-rose-600 uppercase tracking-tighter italic">Participa en la rifa</p>
-                <p class="text-xs text-gray-500">Cada <span class="font-bold text-gray-800">RD$1,000</span> de compra es un boleto.</p>
+    <!-- Ubicación Directa -->
+    <section class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-3xl p-6 shadow-md border border-gray-200">
+            <h3 class="font-black text-xl mb-4">UBICACIÓN Y HORARIO</h3>
+            <div class="space-y-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-map-marker-alt text-kindo"></i>
+                    <p class="text-sm font-medium">Av. Juan Pablo Duarte #15, Santiago, RD.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-clock text-kindo"></i>
+                    <p class="text-sm font-medium">Lunes a Domingo: 9:00 AM - 9:00 PM</p>
+                </div>
             </div>
-            <p class="text-[10px] text-gray-300 font-bold uppercase tracking-widest">Kindo Mall &copy; 2024 • Santiago, RD</p>
+            <a href="https://maps.app.goo.gl/aNGF1JV6jWR3FKtU7" target="_blank" class="block w-full bg-gray-900 text-white text-center py-4 rounded-xl font-bold uppercase tracking-widest mb-3">
+                <i class="fas fa-directions"></i> Abrir en Google Maps
+            </a>
+            <a href="tel:18292634234" class="block w-full bg-blue-600 text-white text-center py-4 rounded-xl font-bold uppercase tracking-widest">
+                <i class="fas fa-phone-alt"></i> Llamar al Centro
+            </a>
         </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-10 text-center px-4">
+        <p class="text-xs text-gray-400 uppercase tracking-widest">Kindo Mall Santiago &copy; 2024</p>
+        <p class="text-[10px] text-gray-600 mt-2">Cada RD$1,000 de compra es un boleto para la rifa.</p>
     </footer>
 
-    <a href="https://wa.me/18292634234" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl z-50 active:scale-90 transition-transform">
-        <i class="fa-brands fa-whatsapp text-3xl"></i>
+    <!-- Botón Flotante WhatsApp -->
+    <a href="https://wa.me/18292634234" class="fixed bottom-6 right-6 bg-green-500 text-white w-16 h-16 rounded-full flex items-center justify-center shadow-2xl z-50">
+        <i class="fab fa-whatsapp text-3xl"></i>
     </a>
 
-    <!-- Modales de Admin -->
-    <div id="m-login" class="modal-overlay px-4" onclick="if(event.target==this) closeModals()">
-        <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl">
-            <h2 class="text-center font-black text-xl mb-6">ADMINISTRACIÓN</h2>
-            <div class="space-y-4">
-                <input type="text" id="u-in" placeholder="Usuario" class="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-rose-500">
-                <input type="password" id="p-in" placeholder="Clave" class="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-rose-500">
-                <button onclick="login()" class="w-full kindo-bg-red text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-lg active:scale-[0.98] transition-transform">Entrar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="m-admin" class="modal-overlay px-4">
-        <div class="bg-white w-full max-w-2xl h-[85vh] rounded-3xl flex flex-col overflow-hidden">
-            <div class="p-5 border-b flex justify-between items-center">
-                <span class="font-black text-rose-600">EDITOR KINDO</span>
-                <button onclick="closeModals()" class="text-gray-300"><i class="fa-solid fa-times text-xl"></i></button>
-            </div>
-            <div class="flex-grow overflow-y-auto p-5 space-y-6 bg-gray-50">
-                <form id="prod-form" class="space-y-3 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                    <input type="hidden" id="f-id">
-                    <input type="text" id="f-name" placeholder="Nombre del producto" required class="w-full p-3 bg-gray-50 rounded-lg border-0">
-                    <div class="grid grid-cols-2 gap-3">
-                        <input type="number" id="f-price" placeholder="Precio RD$" required class="w-full p-3 bg-gray-50 rounded-lg border-0">
-                        <select id="f-floor" class="w-full p-3 bg-gray-50 rounded-lg border-0">
-                            <option value="1">Piso 1</option>
-                            <option value="2">Piso 2</option>
-                        </select>
-                    </div>
-                    <input type="text" id="f-img" placeholder="URL de la imagen" required class="w-full p-3 bg-gray-50 rounded-lg border-0">
-                    <button type="submit" id="f-btn" class="w-full kindo-bg-red text-white py-3 rounded-lg font-black uppercase tracking-widest">Guardar Producto</button>
-                </form>
-                <div id="admin-list" class="space-y-2"></div>
-                <button onclick="logout()" class="w-full py-4 text-gray-400 text-[10px] font-bold uppercase tracking-widest">Cerrar Sesión</button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kindo-mall-prod';
-
-        let products = [];
-        let floor = 1;
-        let isFirstLoad = true;
-
-        const forceUIRender = () => {
-            if (isFirstLoad) {
-                isFirstLoad = false;
-                const loader = document.getElementById('loader');
-                if (loader) loader.style.display = 'none';
-                render();
-            }
-        };
-
-        setTimeout(forceUIRender, 1800);
-
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (e) {
-                forceUIRender();
-            }
-        };
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('conn-dot').style.backgroundColor = '#22c55e';
-                const q = collection(db, 'artifacts', appId, 'public', 'data', 'products');
-                onSnapshot(q, (snap) => {
-                    products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    forceUIRender();
-                }, (err) => forceUIRender());
-            } else {
-                initAuth();
-            }
-        });
-
-        window.render = () => {
-            const grid = document.getElementById('grid');
-            if (!grid) return;
-            const search = document.getElementById('search').value.toLowerCase();
-            const filtered = products.filter(p => p.floor == floor && (p.name || '').toLowerCase().includes(search));
-
-            if(filtered.length === 0 && !isFirstLoad) {
-                grid.innerHTML = `<div class="col-span-full py-20 text-center"><p class="text-gray-300 text-xs font-bold uppercase tracking-widest">No hay productos</p></div>`;
-                return;
-            }
-
-            grid.innerHTML = filtered.map(p => `
-                <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col fade-in shadow-sm">
-                    <div class="relative pt-[100%] bg-gray-50 overflow-hidden">
-                        <img src="${p.img}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/400?text=Kindo+Mall'">
-                    </div>
-                    <div class="p-3">
-                        <h3 class="font-bold text-[10px] text-gray-800 uppercase line-clamp-2 leading-tight">${p.name}</h3>
-                        <p class="text-rose-600 font-black text-sm my-2">RD$ ${Number(p.price).toLocaleString()}</p>
-                        <a href="https://wa.me/18292634234?text=Me interesa: ${encodeURIComponent(p.name)}" target="_blank" class="block w-full text-center py-2 bg-gray-900 text-white text-[9px] font-black uppercase rounded-xl">Consultar</a>
-                    </div>
-                </div>
-            `).join('');
-        };
-
-        window.switchFloor = (f) => {
-            floor = f;
-            document.getElementById('t1').className = f === 1 ? 'tab-btn flex-1 py-3 text-xs font-black uppercase tracking-widest tab-active' : 'tab-btn flex-1 py-3 text-xs font-black uppercase tracking-widest text-gray-400';
-            document.getElementById('t2').className = f === 2 ? 'tab-btn flex-1 py-3 text-xs font-black uppercase tracking-widest tab-active' : 'tab-btn flex-1 py-3 text-xs font-black uppercase tracking-widest text-gray-400';
-            render();
-        };
-
-        window.openAdmin = () => {
-            if(localStorage.getItem('kindo_admin_v3') === 'true') {
-                document.getElementById('m-admin').classList.add('modal-active');
-                renderAdmin();
-            } else {
-                document.getElementById('m-login').classList.add('modal-active');
-            }
-        };
-
-        window.closeModals = () => {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('modal-active'));
-        };
-
-        window.login = () => {
-            if(document.getElementById('u-in').value === 'admin' && document.getElementById('p-in').value === 'admin12') {
-                localStorage.setItem('kindo_admin_v3', 'true');
-                closeModals();
-                openAdmin();
-            } else { alert('Acceso denegado'); }
-        };
-
-        window.logout = () => { localStorage.removeItem('kindo_admin_v3'); closeModals(); };
-
-        window.renderAdmin = () => {
-            const list = document.getElementById('admin-list');
-            list.innerHTML = products.map(p => `
-                <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                    <div class="truncate">
-                        <p class="font-bold text-[10px] uppercase truncate">${p.name}</p>
-                        <p class="text-[9px] text-gray-400">PISO ${p.floor} • RD$ ${p.price}</p>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button onclick="editP('${p.id}')" class="text-blue-500 p-2"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="delP('${p.id}')" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                </div>
-            `).join('');
-        };
-
-        window.delP = async (id) => { if(confirm('¿Eliminar?')) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id)); };
-
-        window.editP = (id) => {
-            const p = products.find(x => x.id === id);
-            document.getElementById('f-id').value = p.id;
-            document.getElementById('f-name').value = p.name;
-            document.getElementById('f-price').value = p.price;
-            document.getElementById('f-floor').value = p.floor;
-            document.getElementById('f-img').value = p.img;
-        };
-
-        document.getElementById('prod-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('f-id').value || Date.now().toString();
-            const data = {
-                name: document.getElementById('f-name').value,
-                price: Number(document.getElementById('f-price').value),
-                floor: Number(document.getElementById('f-floor').value),
-                img: document.getElementById('f-img').value,
-                updatedAt: serverTimestamp()
-            };
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id), data);
-            document.getElementById('prod-form').reset();
-            document.getElementById('f-id').value = '';
-        };
-
-        const canvas = document.createElement('canvas');
-        canvas.width = 64; canvas.height = 64;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#e11d48';
-        ctx.beginPath(); ctx.roundRect(0, 0, 64, 64, 15); ctx.fill();
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 40px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('K', 32, 34);
-        document.getElementById('favicon').href = canvas.toDataURL();
-
-    </script>
 </body>
 </html>
