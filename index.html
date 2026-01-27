@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { 
   Search, X, Plus, Package, Trash2, Refrigerator, Lock, Bed, Drill, 
-  ShoppingCart, Loader2
+  ShoppingCart, Loader2, WifiOff
 } from 'lucide-react';
 
 // --- AYUDANTES ---
@@ -37,6 +37,7 @@ export default function App() {
   const [auth, setAuth] = useState(null);
   const [user, setUser] = useState(null);
   const [appId] = useState(typeof __app_id !== 'undefined' ? __app_id : 'kindo-mall-santiago');
+  const [errorStatus, setErrorStatus] = useState(null);
 
   // Estados de App
   const [view, setView] = useState('home'); 
@@ -48,11 +49,14 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [nuevoP, setNuevoP] = useState({ nombre: '', precio: '', categoria: 'herramientas', imagen: '', marca: '' });
 
-  // 1. Inicialización de Firebase
+  // 1. Inicialización de Firebase Robusta
   useEffect(() => {
     const startFirebase = async () => {
       try {
-        if (typeof __firebase_config === 'undefined' || !__firebase_config) return;
+        if (typeof __firebase_config === 'undefined' || !__firebase_config) {
+          setErrorStatus("Esperando configuración...");
+          return;
+        }
 
         const config = JSON.parse(__firebase_config);
         const firebaseApp = getApps().length === 0 ? initializeApp(config) : getApps()[0];
@@ -62,36 +66,43 @@ export default function App() {
         setAuth(firebaseAuth);
         setDb(firebaseDb);
 
-        // Autenticación
-        try {
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(firebaseAuth, __initial_auth_token);
-          } else {
-            await signInAnonymously(firebaseAuth);
+        // Intento de Auth con reintentos silenciosos
+        const performAuth = async () => {
+          try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(firebaseAuth, __initial_auth_token);
+            } else {
+              await signInAnonymously(firebaseAuth);
+            }
+          } catch (e) {
+            console.warn("Reintentando conexión...");
+            setTimeout(performAuth, 2000);
           }
-        } catch (e) {
-          console.warn("Auth retry...");
-        }
+        };
+        performAuth();
 
         const unsubAuth = onAuthStateChanged(firebaseAuth, (u) => {
           setUser(u);
-          if (u) setLoading(false);
+          if (u) {
+            setLoading(false);
+            setErrorStatus(null);
+          }
         });
 
         return unsubAuth;
       } catch (err) {
-        console.error("Firebase Init Error:", err);
+        setErrorStatus("Error de inicialización");
+        console.error(err);
       }
     };
 
     startFirebase();
   }, []);
 
-  // 2. Carga de Productos
+  // 2. Carga de Productos con Guardián
   useEffect(() => {
     if (!user || !db) return;
     
-    setLoading(true);
     const path = ['artifacts', appId, 'public', 'data', 'productos'];
     const publicCollection = collection(db, ...path);
     
@@ -104,8 +115,7 @@ export default function App() {
       setProductos(prods);
       setLoading(false);
     }, (err) => {
-      console.error("Firestore Error:", err);
-      setLoading(false);
+      console.error("Firestore Sync Error:", err);
     });
 
     return () => unsub();
@@ -151,6 +161,27 @@ export default function App() {
       console.error("Delete error:", e);
     }
   };
+
+  // Renderizado de Error (Solo si es crítico y persistente)
+  if (errorStatus && !loading && !user) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-sm w-full text-center border border-slate-200">
+          <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <WifiOff className="text-red-600" size={32} />
+          </div>
+          <h2 className="font-black uppercase text-sm mb-2">Conexión inestable</h2>
+          <p className="text-slate-500 text-xs mb-6">{errorStatus}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-red-600 transition-all"
+          >
+            Reintentar Conexión
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans text-[14px]">
@@ -216,7 +247,7 @@ export default function App() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <Loader2 className="animate-spin text-red-600" size={40} />
-            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">Sincronizando con Santiago...</p>
+            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic animate-pulse">Sincronizando Tienda...</p>
           </div>
         ) : view === 'home' ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
