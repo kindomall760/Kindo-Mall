@@ -9,15 +9,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #fcfcfc; }
-        .product-card { border: 1px solid #000; transition: transform 0.2s; }
-        .product-card:hover { transform: translate(-4px, -4px); box-shadow: 4px 4px 0px #000; }
-        .btn-black { background: #000; color: #fff; border: 1px solid #000; }
-        .btn-black:hover { background: #fff; color: #000; }
-        input, select { border: 1px solid #ddd; padding: 10px; border-radius: 4px; }
-        input:focus { border-color: #000; outline: none; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-header { backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.8); }
+        input:focus { outline: none; border-color: #000; }
+        .product-card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .product-card-hover:hover { transform: translateY(-5px); }
     </style>
 </head>
 <body>
@@ -30,254 +28,365 @@
     <!-- Babel para transformar JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
         
-        // Exponer Firebase globalmente
         window.FB = { initializeApp, getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, query };
     </script>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useMemo } = React;
+
+        // --- ICONOS INLINE SVG (Fallback para Lucide en este entorno) ---
+        const Icon = ({ name, className = "w-5 h-5" }) => {
+            const icons = {
+                search: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>,
+                cart: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>,
+                admin: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>,
+                trash: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>,
+                plus: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>,
+                close: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>,
+                whatsapp: <svg className={className} fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>,
+            };
+            return icons[name] || icons.plus;
+        };
+
+        const CATEGORIAS = [
+            { id: 'todos', label: 'Todo el Catálogo' },
+            { id: 'herramientas', label: 'Herramientas' },
+            { id: 'seguridad', label: 'Seguridad' },
+            { id: 'hogar', label: 'Hogar y Camas' },
+            { id: 'electro', label: 'Electrodomésticos' }
+        ];
+
+        const fixImgurUrl = (url) => {
+            if (!url) return "https://placehold.co/600x600/f1f5f9/94a3b8?text=KindoMall";
+            if (url.includes('imgur.com')) {
+                const idMatch = url.match(/imgur\.com\/(?:a\/|gallery\/|)?([a-zA-Z0-9]+)/);
+                if (idMatch && idMatch[1]) return `https://i.imgur.com/${idMatch[1]}.jpg`;
+            }
+            return url;
+        };
 
         const App = () => {
-            const [productos, setProductos] = useState([]);
-            const [carrito, setCarrito] = useState([]);
-            const [view, setView] = useState('shop');
-            const [categoria, setCategoria] = useState('todos');
             const [db, setDb] = useState(null);
             const [user, setUser] = useState(null);
+            const [view, setView] = useState('home');
+            const [productos, setProductos] = useState([]);
+            const [carrito, setCarrito] = useState([]);
+            const [busqueda, setBusqueda] = useState("");
+            const [categoriaActiva, setCategoriaActiva] = useState('todos');
+            const [isCartOpen, setIsCartOpen] = useState(false);
             const [loading, setLoading] = useState(true);
 
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'kindo-santiago';
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'kindo-mall-santiago';
 
-            // Paso 1: Inicializar Auth
             useEffect(() => {
                 const initAuth = async () => {
                     if (!window.FB || typeof __firebase_config === 'undefined') return;
-                    
-                    const { initializeApp, getFirestore, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = window.FB;
+                    const { initializeApp, getFirestore, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.FB;
                     
                     try {
-                        const firebaseConfig = JSON.parse(__firebase_config);
-                        const app = initializeApp(firebaseConfig);
+                        const app = initializeApp(JSON.parse(__firebase_config));
                         const auth = getAuth(app);
                         const firestore = getFirestore(app);
                         setDb(firestore);
 
-                        // Autenticación según disponibilidad de token
                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                             await signInWithCustomToken(auth, __initial_auth_token);
                         } else {
                             await signInAnonymously(auth);
                         }
 
-                        // Escuchar cambios de auth antes de cualquier consulta a Firestore
-                        const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-                            if (currentUser) {
-                                setUser(currentUser);
-                            }
-                        });
-
-                        return () => unsubscribeAuth();
-                    } catch (err) {
-                        console.error("Auth Error:", err);
-                        setLoading(false);
-                    }
+                        onAuthStateChanged(auth, u => { if (u) setUser(u); });
+                    } catch (e) { console.error(e); }
                 };
-
                 initAuth();
             }, []);
 
-            // Paso 2: Escuchar Firestore solo cuando el usuario existe
             useEffect(() => {
                 if (!db || !user) return;
-
-                const { collection, onSnapshot, query } = window.FB;
-                
-                // IMPORTANTE: Ruta de colección obligatoria para permisos en este entorno
+                const { collection, onSnapshot } = window.FB;
                 const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'productos');
                 
-                const unsubscribe = onSnapshot(colRef, 
-                    (snapshot) => {
-                        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        setProductos(items);
-                        setLoading(false);
-                    }, 
-                    (error) => {
-                        console.error("Firestore Permission Error:", error);
-                        setLoading(false);
-                    }
+                return onSnapshot(colRef, (snap) => {
+                    const items = snap.docs.map(d => ({ id: d.id, ...d.data(), precio: Number(d.data().precio) || 0 }));
+                    setProductos(items);
+                    setLoading(false);
+                });
+            }, [db, user]);
+
+            const totalCarrito = useMemo(() => carrito.reduce((s, p) => s + p.precio, 0), [carrito]);
+            const filtrados = useMemo(() => {
+                return productos.filter(p => 
+                    (categoriaActiva === 'todos' || p.categoria === categoriaActiva) &&
+                    (p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) || p.marca?.toLowerCase().includes(busqueda.toLowerCase()))
                 );
-
-                return () => unsubscribe();
-            }, [db, user, appId]);
-
-            const total = carrito.reduce((acc, item) => acc + (Number(item.precio) || 0), 0);
-            const filteredProducts = productos.filter(p => categoria === 'todos' || p.categoria === categoria);
+            }, [productos, categoriaActiva, busqueda]);
 
             const checkoutWhatsApp = () => {
-                const text = `Orden KindoMall Santiago:%0A${carrito.map(i => `- ${i.nombre} (RD$${i.precio})`).join('%0A')}%0A%0ATotal: RD$${total}`;
+                const items = carrito.map(i => `• ${i.nombre} (RD$${i.precio})`).join('%0A');
+                const text = `Orden KindoMall Santiago:%0A${items}%0A%0A*Total: RD$${totalCarrito}*`;
                 window.open(`https://wa.me/18090000000?text=${text}`, '_blank');
             };
 
             if (loading) return (
-                <div className="flex h-screen items-center justify-center">
-                    <div className="font-black uppercase tracking-tighter text-2xl animate-pulse">KindoMall...</div>
+                <div className="h-screen flex items-center justify-center bg-white">
+                    <div className="text-center">
+                        <div className="w-12 h-12 border-4 border-slate-200 border-t-red-600 rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="font-black uppercase tracking-widest text-[10px] text-slate-400">KindoMall Santiago</p>
+                    </div>
                 </div>
             );
 
             return (
-                <div className="max-w-6xl mx-auto px-6 py-10">
-                    <header className="flex justify-between items-end mb-12 border-b-2 border-black pb-6">
-                        <div>
-                            <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">KindoMall</h1>
-                            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Santiago, Rep. Dom.</p>
-                        </div>
-                        <div className="flex gap-6 items-center">
-                            <button onClick={() => setView(view === 'shop' ? 'admin' : 'shop')} className="text-xs font-bold uppercase hover:underline">
-                                {view === 'shop' ? 'Inventario' : 'Cerrar'}
-                            </button>
-                            <div className="text-sm font-bold">
-                                Carrito ({carrito.length})
-                            </div>
-                        </div>
-                    </header>
+                <div className="min-h-screen">
+                    {/* Top Bar */}
+                    <div className="bg-slate-900 text-white py-2 text-[10px] font-black uppercase tracking-widest text-center">
+                        📦 Santiago, RD • Envío Gratis desde RD$2,000
+                    </div>
 
-                    {view === 'shop' ? (
-                        <>
-                            <div className="flex gap-4 mb-10 overflow-x-auto no-scrollbar pb-2">
-                                {['todos', 'herramientas', 'hogar', 'electro'].map(cat => (
-                                    <button 
-                                        key={cat}
-                                        onClick={() => setCategoria(cat)}
-                                        className={`px-4 py-1 text-xs font-bold uppercase border-2 border-black transition-colors ${categoria === cat ? 'bg-black text-white' : 'bg-white text-black'}`}
-                                    >
-                                        {cat}
-                                    </button>
-                                ))}
+                    {/* Navbar */}
+                    <nav className="sticky top-0 z-40 glass-header border-b border-slate-100 px-4 md:px-8 py-4">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-4 items-center justify-between">
+                            <div className="cursor-pointer" onClick={() => {setView('home'); setCategoriaActiva('todos');}}>
+                                <h1 className="text-2xl font-black tracking-tighter uppercase leading-none">KindoMall</h1>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Santiago de los Caballeros</p>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-                                {filteredProducts.map(p => (
-                                    <div key={p.id} className="product-card bg-white p-4 flex flex-col">
-                                        <div className="aspect-square bg-gray-100 mb-4 overflow-hidden border border-gray-100">
-                                            <img 
-                                                src={p.imagen || 'https://placehold.co/400?text=Kindo'} 
-                                                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" 
-                                                alt={p.nombre}
-                                            />
-                                        </div>
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="font-bold text-lg leading-tight uppercase truncate">{p.nombre}</h3>
-                                                <span className="text-[10px] uppercase font-bold text-gray-400">{p.marca || 'Genérico'}</span>
-                                            </div>
-                                            <span className="font-black text-right min-w-fit ml-2">RD${p.precio}</span>
-                                        </div>
-                                        <button 
-                                            onClick={() => setCarrito([...carrito, p])}
-                                            className="w-full py-2 btn-black text-xs font-bold uppercase tracking-widest"
-                                        >
-                                            Añadir al Carrito
-                                        </button>
-                                    </div>
-                                ))}
+                            <div className="relative w-full md:w-96">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                                    <Icon name="search" className="w-4 h-4" />
+                                </span>
+                                <input 
+                                    className="w-full bg-slate-100 border-none rounded-2xl py-3 pl-12 pr-4 text-sm font-medium"
+                                    placeholder="Buscar herramientas, marcas..."
+                                    value={busqueda}
+                                    onChange={(e) => setBusqueda(e.target.value)}
+                                />
                             </div>
-                        </>
-                    ) : (
-                        <div className="grid md:grid-cols-2 gap-12">
-                            <div className="space-y-6">
-                                <h2 className="font-black uppercase text-xl italic">Añadir Producto</h2>
-                                <form className="flex flex-col gap-4" onSubmit={async (e) => {
-                                    e.preventDefault();
-                                    if (!user) return;
-                                    const { collection, addDoc, serverTimestamp } = window.FB;
-                                    const formData = new FormData(e.target);
-                                    try {
-                                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'productos'), {
-                                            nombre: formData.get('nombre'),
-                                            precio: Number(formData.get('precio')),
-                                            categoria: formData.get('categoria'),
-                                            marca: formData.get('marca'),
-                                            imagen: formData.get('imagen'),
-                                            timestamp: serverTimestamp()
-                                        });
-                                        e.target.reset();
-                                    } catch (err) {
-                                        console.error("Error al guardar:", err);
-                                    }
-                                }}>
-                                    <input name="nombre" placeholder="Nombre del Producto" required />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input name="precio" type="number" placeholder="Precio RD$" required />
-                                        <input name="marca" placeholder="Marca (Opcional)" />
-                                    </div>
-                                    <select name="categoria">
-                                        <option value="herramientas">Herramientas</option>
-                                        <option value="hogar">Hogar</option>
-                                        <option value="electro">Electro</option>
-                                    </select>
-                                    <input name="imagen" placeholder="URL de la Imagen" />
-                                    <button className="btn-black py-4 font-bold uppercase text-xs">Publicar Producto</button>
-                                </form>
-                            </div>
-                            <div className="border-l-0 md:border-l-2 border-black md:pl-10">
-                                <h2 className="font-black uppercase text-xl italic mb-6">Inventario</h2>
-                                <div className="space-y-4">
-                                    {productos.map(p => (
-                                        <div key={p.id} className="flex justify-between items-center border-b border-gray-200 pb-2">
-                                            <span className="text-sm font-bold truncate pr-4">{p.nombre}</span>
-                                            <button 
-                                                onClick={() => {
-                                                    const { doc, deleteDoc } = window.FB;
-                                                    deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'productos', p.id));
-                                                }} 
-                                                className="text-red-600 font-bold text-xs uppercase underline whitespace-nowrap"
-                                            >
-                                                Eliminar
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
-                    {carrito.length > 0 && (
-                        <div className="fixed bottom-10 right-10 z-50">
-                            <div className="bg-white border-2 border-black p-6 shadow-[8px_8px_0px_#000] w-72">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="font-black uppercase text-xs tracking-tighter">Tu Pedido</h4>
-                                    <button onClick={() => setCarrito([])} className="text-[10px] underline font-bold">Vaciar</button>
-                                </div>
-                                <div className="max-h-40 overflow-y-auto mb-4 border-b border-black pb-4 text-[11px] font-bold no-scrollbar">
-                                    {carrito.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between mb-1">
-                                            <span className="truncate w-32 uppercase">{item.nombre}</span>
-                                            <span>RD${item.precio}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="flex justify-between items-center mb-6">
-                                    <span className="text-xs font-black uppercase">Total</span>
-                                    <span className="text-lg font-black">RD${total}</span>
-                                </div>
+                            <div className="flex gap-3">
                                 <button 
-                                    onClick={checkoutWhatsApp}
-                                    className="w-full bg-green-500 text-white border-2 border-black py-3 font-bold uppercase text-[10px] shadow-[4px_4px_0px_#000] hover:bg-green-600 transition-all active:translate-y-1 active:shadow-none"
+                                    onClick={() => setView(view === 'admin' ? 'home' : 'admin')}
+                                    className={`p-3 rounded-2xl transition-all ${view === 'admin' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                                 >
-                                    Confirmar por WhatsApp
+                                    <Icon name="admin" />
+                                </button>
+                                <button 
+                                    onClick={() => setIsCartOpen(true)}
+                                    className="relative p-3 bg-slate-900 text-white rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-slate-200"
+                                >
+                                    <Icon name="cart" />
+                                    {carrito.length > 0 && (
+                                        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
+                                            {carrito.length}
+                                        </span>
+                                    )}
                                 </button>
                             </div>
                         </div>
+
+                        {/* Categorias */}
+                        <div className="max-w-7xl mx-auto mt-4 flex gap-4 overflow-x-auto no-scrollbar">
+                            {CATEGORIAS.map(cat => (
+                                <button 
+                                    key={cat.id}
+                                    onClick={() => {setCategoriaActiva(cat.id); setView('home');}}
+                                    className={`text-[10px] font-black uppercase tracking-widest whitespace-nowrap pb-2 border-b-2 transition-all ${categoriaActiva === cat.id ? 'border-red-600 text-red-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    {cat.label}
+                                </button>
+                            ))}
+                        </div>
+                    </nav>
+
+                    <main className="max-w-7xl mx-auto px-4 md:px-8 py-10">
+                        {view === 'home' ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {filtrados.map(p => (
+                                    <div key={p.id} className="bg-white rounded-[32px] p-4 product-card-hover border border-slate-50 shadow-sm flex flex-col">
+                                        <div className="aspect-[4/5] bg-slate-50 rounded-[24px] overflow-hidden mb-4">
+                                            <img 
+                                                src={fixImgurUrl(p.imagen)} 
+                                                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                                                alt={p.nombre}
+                                            />
+                                        </div>
+                                        <div className="flex-1 px-1">
+                                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">{p.marca || 'Original'}</p>
+                                            <h3 className="font-bold text-slate-900 mb-4 uppercase text-sm leading-tight">{p.nombre}</h3>
+                                        </div>
+                                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded-2xl">
+                                            <div className="pl-2">
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase">Precio</p>
+                                                <p className="font-black text-slate-900">RD${p.precio}</p>
+                                            </div>
+                                            <button 
+                                                onClick={() => setCarrito([...carrito, p])}
+                                                className="bg-slate-900 text-white w-10 h-10 rounded-xl flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg shadow-slate-200"
+                                            >
+                                                <Icon name="plus" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="grid lg:grid-cols-2 gap-12">
+                                <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-xl shadow-slate-50">
+                                    <h2 className="text-xl font-black uppercase italic mb-8 flex items-center gap-3">
+                                        <span className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white not-italic text-sm">
+                                            <Icon name="plus" className="w-4 h-4" />
+                                        </span>
+                                        Añadir al Inventario
+                                    </h2>
+                                    <form className="space-y-4" onSubmit={async (e) => {
+                                        e.preventDefault();
+                                        const { collection, addDoc, serverTimestamp } = window.FB;
+                                        const form = new FormData(e.target);
+                                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'productos'), {
+                                            nombre: form.get('nombre'),
+                                            marca: form.get('marca'),
+                                            precio: Number(form.get('precio')),
+                                            categoria: form.get('categoria'),
+                                            imagen: form.get('imagen'),
+                                            timestamp: serverTimestamp()
+                                        });
+                                        e.target.reset();
+                                        setView('home');
+                                    }}>
+                                        <div>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2 mb-2 block">Nombre del Producto</label>
+                                            <input name="nombre" className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold" required />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2 mb-2 block">Precio RD$</label>
+                                                <input name="precio" type="number" className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold" required />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2 mb-2 block">Marca</label>
+                                                <input name="marca" className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2 mb-2 block">Categoría</label>
+                                            <select name="categoria" className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold">
+                                                {CATEGORIAS.filter(c => c.id !== 'todos').map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2 mb-2 block">URL Imagen (Imgur sugerido)</label>
+                                            <input name="imagen" className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold" />
+                                        </div>
+                                        <button className="w-full bg-slate-900 text-white rounded-2xl py-5 font-black uppercase tracking-widest mt-4 hover:bg-red-600 transition-all">
+                                            Registrar Producto
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <div>
+                                    <h2 className="text-xl font-black uppercase italic mb-8">Gestión de Stock</h2>
+                                    <div className="space-y-4">
+                                        {productos.map(p => (
+                                            <div key={p.id} className="bg-white p-4 rounded-3xl border border-slate-100 flex items-center justify-between group">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 bg-slate-50 rounded-xl overflow-hidden">
+                                                        <img src={fixImgurUrl(p.imagen)} className="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-sm uppercase">{p.nombre}</p>
+                                                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{p.categoria}</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => {
+                                                        const { doc, deleteDoc } = window.FB;
+                                                        deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'productos', p.id));
+                                                    }}
+                                                    className="p-3 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                                >
+                                                    <Icon name="trash" className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Carrito Sidebar */}
+                    {isCartOpen && (
+                        <div className="fixed inset-0 z-50 overflow-hidden">
+                            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
+                            <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col">
+                                <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+                                    <div>
+                                        <h2 className="text-2xl font-black uppercase tracking-tighter">Tu Compra</h2>
+                                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{carrito.length} artículos</p>
+                                    </div>
+                                    <button onClick={() => setIsCartOpen(false)} className="p-3 bg-slate-100 rounded-2xl hover:bg-slate-200">
+                                        <Icon name="close" />
+                                    </button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-8 space-y-4">
+                                    {carrito.length === 0 ? (
+                                        <div className="text-center py-20">
+                                            <Icon name="cart" className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                                            <p className="font-bold text-slate-400 uppercase text-[10px] tracking-widest">El carrito está vacío</p>
+                                        </div>
+                                    ) : (
+                                        carrito.map((item, i) => (
+                                            <div key={i} className="flex gap-4 items-center bg-slate-50 p-4 rounded-[24px]">
+                                                <div className="w-16 h-16 bg-white rounded-xl overflow-hidden shrink-0">
+                                                    <img src={fixImgurUrl(item.imagen)} className="w-full h-full object-cover" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{item.marca || 'Original'}</p>
+                                                    <p className="font-bold text-sm uppercase truncate">{item.nombre}</p>
+                                                    <p className="font-black text-slate-900">RD${item.precio}</p>
+                                                </div>
+                                                <button 
+                                                    onClick={() => setCarrito(carrito.filter((_, idx) => idx !== i))}
+                                                    className="p-2 text-slate-300 hover:text-red-600 transition-colors"
+                                                >
+                                                    <Icon name="trash" className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                                <div className="p-8 bg-slate-50 border-t border-slate-100">
+                                    <div className="flex justify-between items-end mb-6">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total Estimado</p>
+                                            <p className="text-3xl font-black text-slate-900 leading-none">RD${totalCarrito}</p>
+                                        </div>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase italic">ITBIS Inc.</p>
+                                    </div>
+                                    <button 
+                                        onClick={checkoutWhatsApp}
+                                        className="w-full bg-green-500 text-white rounded-2xl py-5 font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-green-100 hover:bg-green-600 transition-all active:scale-95"
+                                    >
+                                        <Icon name="whatsapp" className="w-5 h-5" />
+                                        Completar por WhatsApp
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     )}
 
-                    <footer className="mt-20 pt-10 border-t border-gray-200 text-center">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">KindoMall © 2024 • Santiago de los Caballeros</p>
+                    <footer className="py-20 text-center border-t border-slate-100 mt-20">
+                        <h2 className="text-2xl font-black uppercase tracking-tighter mb-2">KindoMall</h2>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Atención inmediata • Santiago, Rep. Dom.</p>
                     </footer>
                 </div>
             );
