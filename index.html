@@ -1,129 +1,354 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kindo Mall | Catálogo Oficial</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .kindo-red { background-color: #e11d48; }
-        .text-kindo { color: #e11d48; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .product-card img { transition: transform 0.3s ease; }
-        .product-card:hover img { transform: scale(1.05); }
-    </style>
-</head>
-<body class="bg-gray-100">
+import React, { useState, useEffect, useMemo } from 'react';
+import { initializeApp } from 'firebase/app';
+import { 
+  getFirestore, collection, doc, addDoc, onSnapshot, 
+  deleteDoc, serverTimestamp 
+} from 'firebase/firestore';
+import { 
+  getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken
+} from 'firebase/auth';
+import { 
+  Search, X, Plus, Package, Truck, 
+  Trophy, Bike, Trash2, Refrigerator, 
+  Phone, Lock, Bed, Drill, 
+  ShoppingCart, ChevronRight,
+  MapPin
+} from 'lucide-react';
 
-    <!-- Navegación -->
-    <header class="bg-white shadow-md sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <div class="w-10 h-10 kindo-red rounded-lg flex items-center justify-center text-white font-bold text-2xl shadow-lg">K</div>
-                <div>
-                    <h1 class="font-black text-xl tracking-tighter leading-none">KINDO MALL</h1>
-                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Santiago, RD</p>
-                </div>
-            </div>
-            <div class="flex gap-4">
-                <a href="tel:18292634234" class="text-kindo text-xl"><i class="fas fa-phone-alt"></i></a>
-                <a href="https://wa.me/18292634234" class="text-green-500 text-xl"><i class="fab fa-whatsapp"></i></a>
-            </div>
+// --- CONFIGURACIÓN DE FIREBASE ---
+const firebaseConfig = JSON.parse(__firebase_config);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'kindo-mall-v2';
+
+const CATEGORIAS = [
+  { id: 'todos', label: 'Todo el Catálogo', icon: Package },
+  { id: 'herramientas', label: 'Herramientas', icon: Drill },
+  { id: 'seguridad', label: 'Seguridad', icon: Lock },
+  { id: 'hogar', label: 'Hogar y Camas', icon: Bed },
+  { id: 'electro', label: 'Electrodomésticos', icon: Refrigerator }
+];
+
+// Función para asegurar que el link de Imgur sea directo (i.imgur.com/ID.jpg)
+const fixImgurUrl = (url) => {
+  if (!url) return "https://placehold.co/600x600/eee/999?text=Sin+Imagen";
+  // Si es un link de Imgur pero no es directo, lo convertimos
+  if (url.includes('imgur.com') && !url.includes('i.imgur.com')) {
+    const parts = url.split('/');
+    const id = parts[parts.length - 1].split('.')[0];
+    return `https://i.imgur.com/${id}.jpg`;
+  }
+  return url;
+};
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [view, setView] = useState('home'); 
+  const [productos, setProductos] = useState([]);
+  const [carrito, setCarrito] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [categoriaActiva, setCategoriaActiva] = useState('todos');
+  const [nuevoP, setNuevoP] = useState({ nombre: '', precio: '', categoria: 'herramientas', imagen: '', marca: '' });
+
+  // Autenticación inicial
+  useEffect(() => {
+    const initAuth = async () => {
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+        await signInWithCustomToken(auth, __initial_auth_token);
+      } else {
+        await signInAnonymously(auth);
+      }
+    };
+    initAuth();
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
+  }, []);
+
+  // Escucha de productos en tiempo real
+  useEffect(() => {
+    if (!user) return;
+    const unsub = onSnapshot(
+      collection(db, 'artifacts', appId, 'public', 'data', 'productos'), 
+      (snap) => {
+        setProductos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      },
+      (error) => console.error("Error Firestore:", error)
+    );
+    return () => unsub();
+  }, [user]);
+
+  const totalCarrito = useMemo(() => carrito.reduce((s, p) => s + (p.precio || 0), 0), [carrito]);
+  
+  const productosFiltrados = productos.filter(p => 
+    (categoriaActiva === 'todos' || p.categoria === categoriaActiva) &&
+    (p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) || p.marca?.toLowerCase().includes(busqueda.toLowerCase()))
+  );
+
+  const handleAddProduct = async (e) => {
+    e.preventDefault();
+    if (!user || !nuevoP.nombre || !nuevoP.precio) return;
+    try {
+      const finalUrl = fixImgurUrl(nuevoP.imagen);
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'productos'), {
+        ...nuevoP, 
+        imagen: finalUrl,
+        precio: Number(nuevoP.precio), 
+        timestamp: serverTimestamp()
+      });
+      setNuevoP({ nombre: '', precio: '', categoria: 'herramientas', imagen: '', marca: '' });
+    } catch (error) { console.error("Error al guardar:", error); }
+  };
+
+  const handleDeleteProduct = async (id) => {
+    if(!user) return;
+    try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'productos', id)); } catch (e) {}
+  };
+
+  return (
+    <div className="min-h-screen bg-white text-slate-800 font-sans">
+      
+      {/* TOPBAR */}
+      <div className="bg-slate-900 text-white py-2 text-[11px] font-medium">
+        <div className="container mx-auto px-6 flex justify-between items-center uppercase tracking-wider">
+          <div className="flex gap-6 items-center">
+            <span className="flex items-center gap-2"><MapPin size={12} className="text-red-500"/> Santiago, República Dominicana</span>
+            <span className="hidden md:flex items-center gap-2"><Truck size={12} className="text-red-500"/> Envío Gratis en Santiago</span>
+          </div>
+          <div className="flex gap-4">
+            <button onClick={() => setView('admin')} className="hover:text-red-500 transition-colors font-bold uppercase">Panel Admin</button>
+          </div>
         </div>
-    </header>
+      </div>
 
-    <!-- Hero Section -->
-    <section class="bg-white px-4 py-12 border-b text-center">
-        <h2 class="text-4xl font-black leading-none text-gray-900 tracking-tighter uppercase">Estilo y Calidad<br><span class="text-kindo">Al mejor precio</span></h2>
-        <p class="text-gray-500 mt-4 text-sm font-medium max-w-xs mx-auto">Explora nuestro catálogo exclusivo en Santiago de los Caballeros.</p>
-    </section>
-
-    <!-- Catálogo de Productos -->
-    <main class="container mx-auto px-4 py-8">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-            
-            <!-- Bloque de Producto 1 -->
-            <div class="product-card bg-white rounded-3xl p-3 shadow-sm border border-transparent hover:border-rose-100 transition-all">
-                <div class="overflow-hidden rounded-2xl bg-gray-50">
-                    <img src="fotos/producto1.jpg" class="w-full aspect-square object-cover" alt="Producto Kindo" onerror="this.src='https://via.placeholder.com/400?text=Kindo+Mall'">
-                </div>
-                <div class="mt-3 px-1">
-                    <h3 class="font-bold text-xs uppercase text-gray-700 truncate">Nombre del Producto</h3>
-                    <p class="text-kindo font-black text-xl mt-1">RD$ 0,000</p>
-                    <a href="https://wa.me/18292634234?text=Hola, me interesa: Nombre del Producto" class="flex items-center justify-center gap-2 w-full py-3 bg-green-500 text-white rounded-xl text-[10px] font-black mt-3 transition-colors shadow-lg shadow-green-100 uppercase">
-                        <i class="fab fa-whatsapp text-sm"></i> Comprar ahora
-                    </a>
-                </div>
+      {/* HEADER */}
+      <header className="bg-white border-b sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-6 h-20 flex items-center justify-between gap-8">
+          
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => {setView('home'); setCategoriaActiva('todos');}}>
+            <div className="bg-red-600 p-2 rounded-lg shadow-lg">
+                <Package className="text-white" size={24} />
             </div>
-
-            <!-- Bloque de Producto 2 -->
-            <div class="product-card bg-white rounded-3xl p-3 shadow-sm border border-transparent hover:border-rose-100 transition-all">
-                <div class="overflow-hidden rounded-2xl bg-gray-50">
-                    <img src="fotos/producto2.jpg" class="w-full aspect-square object-cover" alt="Producto Kindo" onerror="this.src='https://via.placeholder.com/400?text=Kindo+Mall'">
-                </div>
-                <div class="mt-3 px-1">
-                    <h3 class="font-bold text-xs uppercase text-gray-700 truncate">Nombre del Producto</h3>
-                    <p class="text-kindo font-black text-xl mt-1">RD$ 0,000</p>
-                    <a href="https://wa.me/18292634234?text=Hola, me interesa: Nombre del Producto" class="flex items-center justify-center gap-2 w-full py-3 bg-green-500 text-white rounded-xl text-[10px] font-black mt-3 transition-colors shadow-lg shadow-green-100 uppercase">
-                        <i class="fab fa-whatsapp text-sm"></i> Comprar ahora
-                    </a>
-                </div>
+            <div className="flex flex-col">
+              <span className="text-xl font-black leading-none text-slate-900 uppercase">KINDO<span className="text-red-600">MALL</span></span>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Santiago RD</span>
             </div>
+          </div>
 
-            <!-- Puedes copiar y pegar el bloque de arriba para añadir más productos -->
+          <div className="flex-1 max-w-xl relative hidden md:block">
+            <input 
+                className="w-full bg-slate-100 border-transparent border focus:border-red-500 focus:bg-white rounded-xl py-3 pl-5 pr-12 text-sm outline-none transition-all" 
+                placeholder="Buscar por nombre o marca..." 
+                onChange={(e) => setBusqueda(e.target.value)} 
+            />
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          </div>
 
+          <div className="flex items-center gap-6">
+            <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-slate-700 hover:text-red-600 transition-colors">
+              <ShoppingCart size={24} />
+              {carrito.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
+                  {carrito.length}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
-    </main>
+      </header>
 
-    <!-- Información de Contacto y Mapa -->
-    <section class="container mx-auto px-4 pb-24">
-        <div class="bg-gray-900 rounded-[2.5rem] p-8 text-white shadow-2xl overflow-hidden relative">
-            <div class="relative z-10">
-                <h3 class="font-black text-2xl mb-6 tracking-tighter">NUESTRA TIENDA</h3>
-                <div class="space-y-6">
-                    <div class="flex items-start gap-4">
-                        <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-kindo flex-shrink-0">
-                            <i class="fas fa-map-marker-alt"></i>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ubicación Exacta</p>
-                            <p class="text-sm">Av. Juan Pablo Duarte #15, Santiago, RD.</p>
+      {/* NAVEGACIÓN */}
+      <nav className="bg-white border-b overflow-x-auto no-scrollbar">
+        <div className="container mx-auto px-6 flex items-center gap-8 py-4">
+          {CATEGORIAS.map(cat => (
+            <button 
+              key={cat.id}
+              onClick={() => {setCategoriaActiva(cat.id); setView('home');}}
+              className={`text-[12px] font-bold uppercase tracking-wide whitespace-nowrap transition-all border-b-2 pb-1 ${categoriaActiva === cat.id ? 'text-red-600 border-red-600' : 'text-slate-500 border-transparent hover:text-slate-900'}`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      <main className="container mx-auto px-6 py-10 max-w-7xl">
+        {view === 'home' ? (
+          <>
+            {/* GRILLA PRODUCTOS */}
+            <div className="flex items-center justify-between mb-10 border-l-4 border-red-600 pl-4">
+              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+                {categoriaActiva === 'todos' ? 'Inventario Disponible' : CATEGORIAS.find(c => c.id === categoriaActiva)?.label}
+              </h3>
+            </div>
+
+            {productosFiltrados.length === 0 ? (
+                <div className="text-center py-40 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                    <Package size={48} className="mx-auto text-slate-200 mb-4" />
+                    <p className="text-slate-400 font-bold uppercase text-xs">No hay productos disponibles. Usa el panel admin para agregar uno.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {productosFiltrados.map(p => (
+                    <div key={p.id} className="group bg-white rounded-2xl border border-slate-100 hover:border-red-500/20 hover:shadow-xl transition-all duration-500 flex flex-col h-full overflow-hidden">
+                    <div className="aspect-square bg-white relative overflow-hidden p-8 flex items-center justify-center border-b border-slate-50">
+                        <img 
+                        src={fixImgurUrl(p.imagen)} 
+                        alt={p.nombre} 
+                        className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700" 
+                        loading="lazy"
+                        />
+                        <div className="absolute top-4 left-4">
+                        <span className="bg-slate-900 text-white text-[9px] font-black uppercase px-2.5 py-1 rounded shadow-sm">
+                            {p.marca || 'Genérico'}
+                        </span>
                         </div>
                     </div>
-                    <div class="flex items-start gap-4">
-                        <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-kindo flex-shrink-0">
-                            <i class="fas fa-clock"></i>
+                    
+                    <div className="p-7 flex flex-col flex-1">
+                        <p className="text-[10px] font-bold text-red-600 uppercase tracking-[0.2em] mb-2">{p.categoria}</p>
+                        <h4 className="font-bold text-base text-slate-800 mb-8 line-clamp-2 leading-snug group-hover:text-red-600 transition-colors">{p.nombre}</h4>
+                        
+                        <div className="mt-auto flex items-end justify-between">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">RD$</span>
+                            <span className="text-3xl font-black text-slate-900 leading-none">{p.precio?.toLocaleString()}</span>
                         </div>
-                        <div>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Horario de Atención</p>
-                            <p class="text-sm text-rose-400 font-bold">9:00 AM - 9:00 PM (Todos los días)</p>
+                        <button 
+                            onClick={() => setCarrito([...carrito, p])}
+                            className="bg-slate-900 text-white hover:bg-red-600 p-3.5 rounded-xl transition-all active:scale-95 shadow-lg shadow-slate-200"
+                        >
+                            <Plus size={22} />
+                        </button>
                         </div>
                     </div>
+                    </div>
+                ))}
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-8">
-                    <a href="https://maps.app.goo.gl/aNGF1JV6jWR3FKtU7" target="_blank" class="bg-white text-gray-900 text-center py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-100 transition-colors">
-                        <i class="fas fa-location-arrow mr-2"></i> Abrir Google Maps
-                    </a>
-                    <a href="tel:18292634234" class="bg-rose-600 text-white text-center py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-700 transition-colors">
-                        <i class="fas fa-phone-alt mr-2"></i> Llamar ahora
-                    </a>
+            )}
+          </>
+        ) : (
+          /* ADMIN */
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center justify-between mb-8 pb-4 border-b">
+              <h2 className="text-2xl font-black text-slate-900 uppercase">Agregar Productos</h2>
+              <button onClick={() => setView('home')} className="text-xs font-bold uppercase flex items-center gap-2 text-slate-500 hover:text-red-600">
+                <ChevronRight className="rotate-180" size={16}/> Volver a la Tienda
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
+              <form className="lg:col-span-1 bg-slate-50 p-8 rounded-3xl border border-slate-200 space-y-5" onSubmit={handleAddProduct}>
+                <h4 className="font-black text-xs uppercase tracking-widest text-slate-400 mb-2">Nuevo Producto</h4>
+                <div className="space-y-4">
+                  <input className="w-full p-4 rounded-xl border-slate-200 border text-sm outline-none focus:border-red-500 bg-white" placeholder="Nombre (Ej: Taladro Ingco)" value={nuevoP.nombre} onChange={e => setNuevoP({...nuevoP, nombre: e.target.value})} required />
+                  <input className="w-full p-4 rounded-xl border-slate-200 border text-sm outline-none focus:border-red-500 bg-white" placeholder="Marca (Ej: Ingco)" value={nuevoP.marca} onChange={e => setNuevoP({...nuevoP, marca: e.target.value})} />
+                  <input className="w-full p-4 rounded-xl border-slate-200 border text-sm outline-none focus:border-red-500 bg-white" type="number" placeholder="Precio RD$" value={nuevoP.precio} onChange={e => setNuevoP({...nuevoP, precio: e.target.value})} required />
+                  <select className="w-full p-4 rounded-xl border-slate-200 border text-sm outline-none focus:border-red-500 bg-white font-bold" value={nuevoP.categoria} onChange={e => setNuevoP({...nuevoP, categoria: e.target.value})}>
+                      {CATEGORIAS.filter(c => c.id !== 'todos').map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                  </select>
+                  <input className="w-full p-4 rounded-xl border-slate-200 border text-sm outline-none focus:border-red-500 bg-white" placeholder="Link de Imgur" value={nuevoP.imagen} onChange={e => setNuevoP({...nuevoP, imagen: e.target.value})} />
+                  <p className="text-[10px] text-slate-400 italic">Puedes pegar el link de la galería y se corregirá solo.</p>
+                  <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase text-xs hover:bg-red-600 transition-all shadow-xl">Guardar Producto</button>
                 </div>
+              </form>
+
+              <div className="lg:col-span-3">
+                <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 border-b text-[10px] font-black uppercase text-slate-400">
+                      <tr>
+                        <th className="px-8 py-5">Producto</th>
+                        <th className="px-8 py-5">Marca</th>
+                        <th className="px-8 py-5">Precio</th>
+                        <th className="px-8 py-5 text-right">Borrar</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {productos.map(p => (
+                        <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-8 py-5">
+                            <div className="flex items-center gap-4">
+                              <img src={fixImgurUrl(p.imagen)} className="w-12 h-12 rounded-lg border object-cover bg-white" />
+                              <div className="font-bold text-slate-900">{p.nombre}</div>
+                            </div>
+                          </td>
+                          <td className="px-8 py-5 uppercase font-bold text-slate-400">{p.marca || '-'}</td>
+                          <td className="px-8 py-5 font-black text-slate-900 text-sm">RD${p.precio?.toLocaleString()}</td>
+                          <td className="px-8 py-5 text-right">
+                            <button onClick={() => handleDeleteProduct(p.id)} className="text-slate-300 hover:text-red-600 transition-colors p-2">
+                              <Trash2 size={18}/>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {productos.length === 0 && (
+                          <tr>
+                              <td colSpan="4" className="px-8 py-20 text-center text-slate-300 font-bold uppercase tracking-widest">No hay artículos guardados</td>
+                          </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* FOOTER */}
+      <footer className="bg-slate-50 border-t py-20 mt-20">
+        <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="space-y-6">
+            <h5 className="font-black text-lg uppercase tracking-tight">Kindo Mall</h5>
+            <p className="text-slate-400 text-sm leading-relaxed">Tu aliado en Santiago para herramientas de alto desempeño y confort para el hogar.</p>
+          </div>
+          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm md:col-span-2 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-center md:text-left">
+              <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Atención al Cliente</p>
+              <h4 className="text-xl font-black text-slate-900">¿Dudas con tu compra?</h4>
+            </div>
+            <button className="whitespace-nowrap flex items-center justify-center gap-3 bg-green-600 text-white px-8 py-4 rounded-2xl text-xs font-black uppercase hover:bg-green-700 transition-all shadow-lg shadow-green-100">
+              <Phone size={16}/> WhatsApp
+            </button>
+          </div>
+        </div>
+      </footer>
+
+      {/* MODAL CARRITO */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
+            <div className="bg-white w-full max-w-md h-full relative z-10 flex flex-col shadow-2xl">
+                <div className="p-8 flex justify-between items-center border-b">
+                    <h2 className="text-2xl font-black text-slate-900 uppercase">Carrito <span className="text-red-600">({carrito.length})</span></h2>
+                    <button onClick={() => setIsCartOpen(false)} className="bg-slate-100 p-2 rounded-full text-slate-400 hover:text-red-600 transition-colors"><X size={24}/></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                    {carrito.map((item, i) => (
+                        <div key={i} className="flex gap-5 items-center border-b border-slate-50 pb-6">
+                            <img src={fixImgurUrl(item.imagen)} className="w-20 h-20 bg-slate-50 rounded-xl border border-slate-100 object-contain p-2" />
+                            <div className="flex-1">
+                                <p className="font-bold text-sm text-slate-900 line-clamp-2 mb-1">{item.nombre}</p>
+                                <p className="font-black text-lg text-red-600">RD${item.precio?.toLocaleString()}</p>
+                            </div>
+                            <button onClick={() => setCarrito(carrito.filter((_, idx) => idx !== i))} className="text-slate-200 hover:text-red-600 transition-colors"><Trash2 size={20}/></button>
+                        </div>
+                    ))}
+                </div>
+                {carrito.length > 0 && (
+                    <div className="p-8 bg-slate-50 border-t border-slate-200">
+                        <div className="flex justify-between items-center mb-8">
+                            <span className="text-xs font-black uppercase text-slate-400">Total</span>
+                            <span className="text-3xl font-black text-slate-900">RD${totalCarrito.toLocaleString()}</span>
+                        </div>
+                        <button className="w-full bg-red-600 text-white py-5 rounded-2xl font-black uppercase text-xs shadow-xl shadow-red-200 hover:bg-red-700 transition-all">Finalizar Compra</button>
+                    </div>
+                )}
             </div>
         </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="py-10 text-center bg-gray-50 border-t">
-        <p class="text-[10px] text-gray-400 font-black uppercase tracking-[0.3em]">Kindo Mall Santiago &copy; 2024</p>
-        <p class="text-[9px] text-gray-300 mt-2 italic">Desarrollado para GitHub Pages</p>
-    </footer>
-
-    <!-- WhatsApp Flotante -->
-    <a href="https://wa.me/18292634234" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-50 hover:scale-110 active:scale-95 transition-all">
-        <i class="fab fa-whatsapp text-3xl"></i>
-    </a>
-
-</body>
-</html>
+      )}
+    </div>
+  );
+}
