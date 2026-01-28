@@ -22,10 +22,18 @@ const CATEGORIAS = [
   { id: 'electro', label: 'Electrodomésticos', icon: Refrigerator }
 ];
 
+// Productos manuales asignados directamente del link de Imgur
+const PRODUCTOS_INICIALES = [
+  { id: 'p1', nombre: 'Jeans Premium Slim', precio: 1850, categoria: 'ropa', marca: 'Kindo Style', imagen: 'https://i.imgur.com/8QjZ8pL.jpeg' },
+  { id: 'p2', nombre: 'Poloche Urban White', precio: 950, categoria: 'ropa', marca: 'Kindo Style', imagen: 'https://i.imgur.com/GjY2X8R.jpeg' },
+  { id: 'p3', nombre: 'Tenis Sport Black', precio: 3200, categoria: 'ropa', marca: 'Sport Line', imagen: 'https://i.imgur.com/V7R3L9s.jpeg' },
+  { id: 'p4', nombre: 'Camisa Formal Blue', precio: 1400, categoria: 'ropa', marca: 'Kindo Elite', imagen: 'https://i.imgur.com/S9XQ9X8.jpeg' }
+];
+
 const REDES_SOCIALES = {
   whatsapp: "18296330000",
   instagram: "kindomall_santiago",
-  ubicacion: "https://maps.app.goo.gl/santiago-rd" // Reemplazar con link real si se desea
+  ubicacion: "https://maps.app.goo.gl/santiago-rd" 
 };
 
 const fixImageUrl = (url) => {
@@ -33,13 +41,9 @@ const fixImageUrl = (url) => {
   let trimmed = url.trim();
   if (trimmed.startsWith('img/')) return trimmed;
   if (trimmed.includes('imgur.com')) {
+    // Manejo de links de Imgur para asegurar que sean directos (.jpg)
     const idMatch = trimmed.match(/imgur\.com\/(?:a\/|gallery\/|)?([a-zA-Z0-9]+)/);
     if (idMatch && idMatch[1]) return `https://i.imgur.com/${idMatch[1]}.jpg`;
-  }
-  if (trimmed.includes('postimg.cc')) {
-    trimmed = trimmed.replace('postimg.cc', 'i.postimg.cc').replace('/n', '/');
-    if (!trimmed.match(/\.(jpg|jpeg|png|webp)$/)) trimmed += ".jpg";
-    return trimmed;
   }
   return trimmed;
 };
@@ -95,15 +99,24 @@ export default function App() {
     const publicCollection = collection(db, 'artifacts', appId, 'public', 'data', 'productos');
     const unsub = onSnapshot(publicCollection, (snap) => {
       const prods = snap.docs.map(d => ({ id: d.id, ...d.data(), precio: Number(d.data().precio) || 0 }));
-      setProductos(prods.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
+      // Si no hay productos en la nube, usamos los manuales del código
+      if (prods.length === 0) {
+        setProductos(PRODUCTOS_INICIALES);
+      } else {
+        setProductos(prods.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
+      }
       setLoading(false);
-    }, (err) => { setLoading(false); });
+    }, (err) => { 
+      setProductos(PRODUCTOS_INICIALES);
+      setLoading(false); 
+    });
     return () => unsub();
   }, [user, db, appId]);
 
   useEffect(() => { setPreviewImg(nuevoP.imagen ? fixImageUrl(nuevoP.imagen) : ""); }, [nuevoP.imagen]);
 
   const totalCarrito = useMemo(() => carrito.reduce((s, p) => s + (Number(p.precio) || 0), 0), [carrito]);
+  
   const productosFiltrados = useMemo(() => {
     return productos.filter(p => 
       (categoriaActiva === 'todos' || p.categoria === categoriaActiva) &&
@@ -116,7 +129,12 @@ export default function App() {
     if (!user || !db || !nuevoP.nombre || !nuevoP.precio) return;
     try {
       const publicCollection = collection(db, 'artifacts', appId, 'public', 'data', 'productos');
-      await addDoc(publicCollection, { ...nuevoP, precio: parseFloat(nuevoP.precio), imagen: fixImageUrl(nuevoP.imagen), timestamp: serverTimestamp() });
+      await addDoc(publicCollection, { 
+        ...nuevoP, 
+        precio: parseFloat(nuevoP.precio), 
+        imagen: fixImageUrl(nuevoP.imagen), 
+        timestamp: serverTimestamp() 
+      });
       setNuevoP({ nombre: '', precio: '', categoria: 'ropa', imagen: '', marca: '', tallas: '' });
       setView('home');
     } catch (error) { console.error("Save error:", error); }
@@ -124,6 +142,11 @@ export default function App() {
 
   const handleDeleteProduct = async (id) => {
     if(!user || !db) return;
+    if (id.startsWith('p')) {
+        // No se borran los estáticos en memoria, solo filtros visuales
+        setProductos(productos.filter(p => p.id !== id));
+        return;
+    }
     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'productos', id));
   };
 
@@ -228,12 +251,12 @@ export default function App() {
                   {previewImg ? <img src={previewImg} className="w-full h-full object-cover" /> : <ImageIcon className="text-slate-300" size={32} />}
                 </div>
                 <form onSubmit={handleAddProduct} className="space-y-4">
-                  <input className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none" placeholder="Nombre" value={nuevoP.nombre} onChange={e => setNuevoP({...nuevoP, nombre: e.target.value})} required />
+                  <input className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none" placeholder="Nombre (ej. Jeans Blue)" value={nuevoP.nombre} onChange={e => setNuevoP({...nuevoP, nombre: e.target.value})} required />
                   <div className="grid grid-cols-2 gap-4">
                     <input className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none" placeholder="Marca" value={nuevoP.marca} onChange={e => setNuevoP({...nuevoP, marca: e.target.value})} />
                     <input className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none font-bold" type="number" placeholder="RD$" value={nuevoP.precio} onChange={e => setNuevoP({...nuevoP, precio: e.target.value})} required />
                   </div>
-                  <input className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none" placeholder="Link de imagen" value={nuevoP.imagen} onChange={e => setNuevoP({...nuevoP, imagen: e.target.value})} />
+                  <input className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none" placeholder="Link de imagen directo (.jpg)" value={nuevoP.imagen} onChange={e => setNuevoP({...nuevoP, imagen: e.target.value})} />
                   <button className="w-full bg-black text-white py-5 rounded-3xl font-black uppercase text-[10px] tracking-widest hover:bg-red-600 transition-all shadow-xl">Guardar Catálogo</button>
                 </form>
               </div>
