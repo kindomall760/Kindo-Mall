@@ -41,7 +41,6 @@ const fixImageUrl = (url) => {
   let trimmed = url.trim();
   if (trimmed.startsWith('img/')) return trimmed;
   if (trimmed.includes('imgur.com')) {
-    // Manejo de links de Imgur para asegurar que sean directos (.jpg)
     const idMatch = trimmed.match(/imgur\.com\/(?:a\/|gallery\/|)?([a-zA-Z0-9]+)/);
     if (idMatch && idMatch[1]) return `https://i.imgur.com/${idMatch[1]}.jpg`;
   }
@@ -65,55 +64,82 @@ export default function App() {
   const [nuevoP, setNuevoP] = useState({ nombre: '', precio: '', categoria: 'ropa', imagen: '', marca: '', tallas: '' });
   const [previewImg, setPreviewImg] = useState("");
 
+  // Inicialización de Firebase (Regla 3: Auth antes que queries)
   useEffect(() => {
     const startFirebase = async () => {
       try {
         if (typeof __firebase_config === 'undefined' || !__firebase_config) {
-          setErrorStatus("Esperando configuración...");
+          setErrorStatus("Configuración faltante");
+          setLoading(false);
           return;
         }
         const config = JSON.parse(__firebase_config);
         const firebaseApp = getApps().length === 0 ? initializeApp(config) : getApps()[0];
         const firebaseAuth = getAuth(firebaseApp);
         const firebaseDb = getFirestore(firebaseApp);
+        
         setAuth(firebaseAuth);
         setDb(firebaseDb);
 
-        const initAuth = async () => {
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(firebaseAuth, __initial_auth_token);
-          } else {
-            await signInAnonymously(firebaseAuth);
+        // Autenticación según especificaciones
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(firebaseAuth, __initial_auth_token);
+        } else {
+          await signInAnonymously(firebaseAuth);
+        }
+
+        const unsubAuth = onAuthStateChanged(firebaseAuth, (u) => {
+          if (u) {
+            setUser(u);
+            setErrorStatus(null);
           }
-        };
-        initAuth();
-        const unsubAuth = onAuthStateChanged(firebaseAuth, (u) => { if (u) { setUser(u); setErrorStatus(null); } });
+        });
         return unsubAuth;
-      } catch (err) { setErrorStatus("Error de conexión"); }
+      } catch (err) {
+        console.error("Firebase Init Error:", err);
+        setErrorStatus("Error de conexión");
+        setLoading(false);
+      }
     };
     startFirebase();
   }, []);
 
+  // Carga de datos de Firestore (Regla 1 y 2)
   useEffect(() => {
     if (!user || !db) return;
+
+    // Ruta estricta de Firestore
     const publicCollection = collection(db, 'artifacts', appId, 'public', 'data', 'productos');
-    const unsub = onSnapshot(publicCollection, (snap) => {
-      const prods = snap.docs.map(d => ({ id: d.id, ...d.data(), precio: Number(d.data().precio) || 0 }));
-      // Si no hay productos en la nube, usamos los manuales del código
-      if (prods.length === 0) {
+    
+    const unsub = onSnapshot(publicCollection, 
+      (snap) => {
+        const prods = snap.docs.map(d => ({ 
+          id: d.id, 
+          ...d.data(), 
+          precio: Number(d.data().precio) || 0 
+        }));
+        
+        // Carga inicial o fallback a productos locales
+        if (prods.length === 0) {
+          setProductos(PRODUCTOS_INICIALES);
+        } else {
+          // Filtrado y ordenado en memoria (Regla 2)
+          setProductos(prods.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
+        }
+        setLoading(false);
+      }, 
+      (err) => { 
+        console.error("Firestore Listen Error:", err);
         setProductos(PRODUCTOS_INICIALES);
-      } else {
-        setProductos(prods.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
+        setLoading(false); 
       }
-      setLoading(false);
-    }, (err) => { 
-      setProductos(PRODUCTOS_INICIALES);
-      setLoading(false); 
-    });
+    );
     return () => unsub();
   }, [user, db, appId]);
 
-  useEffect(() => { setPreviewImg(nuevoP.imagen ? fixImageUrl(nuevoP.imagen) : ""); }, [nuevoP.imagen]);
+  useEffect(() => { 
+    setPreviewImg(nuevoP.imagen ? fixImageUrl(nuevoP.imagen) : ""); 
+  }, [nuevoP.imagen]);
 
   const totalCarrito = useMemo(() => carrito.reduce((s, p) => s + (Number(p.precio) || 0), 0), [carrito]);
   
@@ -137,13 +163,14 @@ export default function App() {
       });
       setNuevoP({ nombre: '', precio: '', categoria: 'ropa', imagen: '', marca: '', tallas: '' });
       setView('home');
-    } catch (error) { console.error("Save error:", error); }
+    } catch (error) { 
+      console.error("Save error:", error); 
+    }
   };
 
   const handleDeleteProduct = async (id) => {
     if(!user || !db) return;
     if (id.startsWith('p')) {
-        // No se borran los estáticos en memoria, solo filtros visuales
         setProductos(productos.filter(p => p.id !== id));
         return;
     }
@@ -155,11 +182,11 @@ export default function App() {
     window.open(`https://wa.me/${REDES_SOCIALES.whatsapp}?text=Pedido KindoMall:%0A${items}%0A%0A*Total: RD$${totalCarrito.toLocaleString()}*`, '_blank');
   };
 
-  if (loading && !errorStatus) {
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white">
         <Loader2 className="animate-spin text-red-600 mb-4" size={40} />
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Kindo Mall Santiago...</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Cargando Kindo Mall...</p>
       </div>
     );
   }
@@ -225,7 +252,12 @@ export default function App() {
             {productosFiltrados.map(p => (
               <div key={p.id} className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden flex flex-col group p-1.5 hover:shadow-2xl transition-all duration-500">
                 <div className="aspect-[3/4] bg-slate-100 rounded-[1.5rem] relative overflow-hidden">
-                  <img src={p.imagen} alt={p.nombre} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => {e.target.src = "https://placehold.co/600x800/f1f5f9/94a3b8?text=Sin+Foto"}} />
+                  <img 
+                    src={p.imagen} 
+                    alt={p.nombre} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                    onError={(e) => {e.target.src = "https://placehold.co/600x800/f1f5f9/94a3b8?text=Sin+Foto"}} 
+                  />
                   <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-lg text-[8px] font-black uppercase text-slate-500 border border-slate-100 shadow-sm">{p.marca || 'Kindo'}</div>
                 </div>
                 <div className="p-4 flex flex-col flex-1">
@@ -240,6 +272,12 @@ export default function App() {
                 </div>
               </div>
             ))}
+            {productosFiltrados.length === 0 && (
+              <div className="col-span-full py-20 text-center">
+                <Package className="mx-auto text-slate-200 mb-4" size={48} />
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">No hay artículos disponibles en esta categoría</p>
+              </div>
+            )}
           </div>
         ) : (
           /* Admin Panel */
@@ -257,6 +295,15 @@ export default function App() {
                     <input className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none font-bold" type="number" placeholder="RD$" value={nuevoP.precio} onChange={e => setNuevoP({...nuevoP, precio: e.target.value})} required />
                   </div>
                   <input className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none" placeholder="Link de imagen directo (.jpg)" value={nuevoP.imagen} onChange={e => setNuevoP({...nuevoP, imagen: e.target.value})} />
+                  <select 
+                    className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none appearance-none"
+                    value={nuevoP.categoria}
+                    onChange={e => setNuevoP({...nuevoP, categoria: e.target.value})}
+                  >
+                    {CATEGORIAS.filter(c => c.id !== 'todos').map(c => (
+                      <option key={c.id} value={c.id}>{c.label}</option>
+                    ))}
+                  </select>
                   <button className="w-full bg-black text-white py-5 rounded-3xl font-black uppercase text-[10px] tracking-widest hover:bg-red-600 transition-all shadow-xl">Guardar Catálogo</button>
                 </form>
               </div>
@@ -340,13 +387,13 @@ export default function App() {
                 </div>
               ) : (
                 carrito.map((item, i) => (
-                  <div key={i} className="flex gap-4 items-center">
+                  <div key={i} className="flex gap-4 items-center animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <img src={item.imagen} className="w-16 h-16 rounded-2xl object-cover border" />
                     <div className="flex-1">
                       <p className="text-sm font-bold text-slate-900 line-clamp-1">{item.nombre}</p>
                       <p className="text-sm font-black text-slate-900">RD${item.precio.toLocaleString()}</p>
                     </div>
-                    <button onClick={() => setCarrito(carrito.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-red-600 p-2"><Trash2 size={18}/></button>
+                    <button onClick={() => setCarrito(carrito.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-red-600 p-2 transition-colors"><Trash2 size={18}/></button>
                   </div>
                 ))
               )}
