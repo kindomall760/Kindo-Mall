@@ -14,6 +14,7 @@ import {
   getDownloadURL 
 } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-storage.js";
 
+/* CONFIGURACIÓN FIREBASE */
 const firebaseConfig = {
   apiKey: "AIzaSyCQd2Aw91y8Kb0c9EoDJTd9FvdlsfRSDqI",
   authDomain: "kindo-mall.firebaseapp.com",
@@ -23,19 +24,21 @@ const firebaseConfig = {
   appId: "1:463969508011:web:1ee78cb55a67dc0a27f5ee"
 };
 
+/* INICIALIZAR */
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
 console.log("Firebase conectado");
 
-/* ---- SUBIR IMÁGENES ---- */
+/* SUBIR IMAGEN */
 window.uploadImage = function(file) {
-  const storageRef = ref(storage, 'images/' + file.name);
+  const storageRef = ref(storage, "images/" + file.name);
   const uploadTask = uploadBytesResumable(storageRef, file);
 
   return new Promise((resolve, reject) => {
-    uploadTask.on('state_changed',
+    uploadTask.on(
+      "state_changed",
       null,
       reject,
       () => getDownloadURL(uploadTask.snapshot.ref).then(resolve)
@@ -43,7 +46,7 @@ window.uploadImage = function(file) {
   });
 };
 
-/* ---- GUARDAR PRODUCTO ---- */
+/* GUARDAR PRODUCTO */
 window.saveProduct = async function(title, price, desc, imgs) {
   await addDoc(collection(db, "products"), {
     title,
@@ -53,8 +56,11 @@ window.saveProduct = async function(title, price, desc, imgs) {
   });
 };
 
-/* ---- ESCUCHAR CAMBIOS EN TIEMPO REAL ---- */
-window.listenProducts = function() {
+/* PRODUCTOS EN MEMORIA */
+window.products = [];
+
+/* ESCUCHAR CAMBIOS EN TIEMPO REAL */
+function listenProducts() {
   onSnapshot(collection(db, "products"), snapshot => {
     window.products = [];
 
@@ -67,7 +73,10 @@ window.listenProducts = function() {
 
     if (window.renderProducts) renderProducts();
   });
-};
+}
 
-listenProducts();
+/* INICIAR CUANDO CARGA LA PÁGINA */
+window.addEventListener("DOMContentLoaded", () => {
+  listenProducts();
+});
 </script>
