@@ -2,154 +2,293 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Kindo Mall Admin</title>
+<title>Kindo Mall</title>
 
 <style>
-body{margin:0;font-family:Arial;background:#f1f3f6;}
+*{box-sizing:border-box}
+body{
+margin:0;
+font-family:Arial, Helvetica, sans-serif;
+background:#eaeded;
+}
 
+/* HEADER */
 header{
 background:#131921;
 color:white;
-padding:15px;
-text-align:center;
-font-size:22px;
+padding:15px 20px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+position:sticky;
+top:0;
+z-index:10;
 }
 
+.logo{
+font-size:22px;
+font-weight:bold;
+}
+
+.searchBox input{
+width:260px;
+padding:10px;
+border:none;
+border-radius:6px;
+}
+
+.adminAccess{
+background:#ff9900;
+padding:8px 14px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+/* BANNER */
+.banner{
+background:linear-gradient(120deg,#c40000,#ff9900);
+color:white;
+padding:40px 20px;
+text-align:center;
+}
+
+.banner h1{margin:0}
+.banner p{margin:10px 0 0}
+
+/* LAYOUT */
 .layout{
 display:flex;
-min-height:100vh;
 }
 
-/* SIDEBAR */
+/* SIDEBAR ADMIN */
 .sidebar{
 width:220px;
 background:#232f3e;
 color:white;
+min-height:100vh;
 padding:15px;
-}
-
-.sidebar h3{
-margin-top:0;
+display:none;
 }
 
 .sidebar button{
 width:100%;
-margin:5px 0;
-padding:10px;
+padding:12px;
+margin-bottom:8px;
 background:#37475a;
-border:none;
 color:white;
+border:none;
 cursor:pointer;
+border-radius:6px;
+}
+
+.sidebar button:hover{
+background:#485769;
 }
 
 /* CONTENT */
 .content{
 flex:1;
-padding:15px;
+padding:20px;
 }
 
-input,select,button{
-padding:8px;
-margin:4px;
+/* SECTION TITLE */
+.section-title{
+font-size:20px;
+margin-bottom:10px;
 }
 
-button{
-background:#ff9900;
-border:none;
-cursor:pointer;
-}
-
+/* PRODUCTS GRID */
 .products{
 display:grid;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:12px;
+grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+gap:18px;
 }
 
+/* CARD */
 .card{
 background:white;
-padding:10px;
-border-radius:8px;
-box-shadow:0 2px 6px rgba(0,0,0,.1);
+border-radius:10px;
+padding:12px;
+box-shadow:0 2px 6px rgba(0,0,0,.15);
+transition:.25s;
+display:flex;
+flex-direction:column;
+}
+
+.card:hover{
+transform:translateY(-5px);
 }
 
 .card img{
 width:100%;
-height:170px;
-object-fit:cover;
+height:200px;
+object-fit:contain;
+background:white;
+border-radius:8px;
+padding:5px;
+transition:.3s;
+}
+
+.card:hover img{
+transform:scale(1.05);
+}
+
+.price{
+font-size:18px;
+font-weight:bold;
+margin:6px 0;
+}
+
+.buyBtn{
+background:#ffd814;
+border:none;
+padding:10px;
+border-radius:8px;
+cursor:pointer;
+margin-top:auto;
+}
+
+.buyBtn:hover{
+background:#f7ca00;
 }
 
 .adminBtn{
 background:#232f3e;
 color:white;
-margin-top:5px;
+padding:8px;
+border:none;
+margin-top:6px;
+border-radius:6px;
+cursor:pointer;
 }
 
-#adminPanel,#logoutBtn{display:none;}
+/* FORM */
+input,select{
+width:100%;
+padding:10px;
+margin-bottom:8px;
+border-radius:6px;
+border:1px solid #ccc;
+}
 
+.saveBtn{
+background:#ff9900;
+padding:12px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+width:100%;
+}
+
+/* LOGIN MODAL */
+.modal{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.6);
+display:none;
+justify-content:center;
+align-items:center;
+z-index:20;
+}
+
+.modalContent{
+background:white;
+padding:20px;
+border-radius:10px;
+width:300px;
+}
+
+/* FOOTER */
 footer{
 background:#131921;
 color:white;
 text-align:center;
-padding:15px;
+padding:20px;
+margin-top:40px;
+}
+
+/* MOBILE */
+@media(max-width:800px){
+.sidebar{display:none!important}
+.searchBox input{width:150px}
 }
 </style>
 </head>
 
 <body>
 
-<header>Kindo Mall - Panel Admin</header>
+<header>
+<div class="logo">🛒 Kindo Mall</div>
+
+<div class="searchBox">
+<input id="search" placeholder="Buscar productos..." onkeyup="filterProducts()">
+</div>
+
+<button class="adminAccess" onclick="openLogin()">Admin</button>
+</header>
+
+<div class="banner">
+<h1>Bienvenido a Kindo Mall</h1>
+<p>Ofertas exclusivas · Productos seleccionados · Compra fácil por WhatsApp</p>
+</div>
 
 <div class="layout">
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-<h3>Panel</h3>
-
+<!-- SIDEBAR ADMIN -->
+<div class="sidebar" id="sidebar">
 <button onclick="showSection('productsSection')">Productos</button>
-<button onclick="showSection('addSection')">Agregar</button>
-<button id="logoutBtn" onclick="logout()">Cerrar sesión</button>
+<button onclick="showSection('addSection')">Agregar / Editar</button>
+<button onclick="logout()">Cerrar sesión</button>
 </div>
 
 <!-- CONTENT -->
 <div class="content">
 
-<!-- LOGIN -->
-<div id="loginBox">
-<h3>Login Administrador</h3>
-<input id="email" placeholder="Correo"><br>
-<input id="password" type="password" placeholder="Contraseña"><br>
-<button onclick="login()">Entrar</button>
-</div>
-
 <!-- PRODUCTOS -->
 <div id="productsSection">
-<input id="search" placeholder="Buscar producto..." onkeyup="filterProducts()">
+<div class="section-title">Productos destacados</div>
 <div class="products" id="products"></div>
 </div>
 
-<!-- AGREGAR -->
+<!-- ADMIN FORM -->
 <div id="addSection" style="display:none;">
 <h3>Agregar / Editar Producto</h3>
 
-<input id="title" placeholder="Nombre"><br>
-<input id="price" placeholder="Precio"><br>
-<input id="image" placeholder="URL Imagen"><br>
+<input id="title" placeholder="Nombre">
+<input id="price" placeholder="Precio">
+<input id="image" placeholder="URL imagen">
 
 <select id="category">
 <option>General</option>
 <option>Ropa</option>
 <option>Electrónica</option>
 <option>Accesorios</option>
-</select><br>
+</select>
 
-<button onclick="saveProduct()">Guardar</button>
+<button class="saveBtn" onclick="saveProduct()">Guardar producto</button>
 </div>
 
+</div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal" id="loginModal">
+<div class="modalContent">
+<h3>Acceso administrador</h3>
+<input id="email" placeholder="Correo">
+<input id="password" type="password" placeholder="Contraseña">
+<button class="saveBtn" onclick="login()">Entrar</button>
 </div>
 </div>
 
 <footer>
-Instagram @kindomall • WhatsApp disponible • Desarrollado por Cesar Dev
+Instagram @kindomall · WhatsApp · Ubicación  
+<br>
+Desarrollado por Cesar Dev
 </footer>
 
 <script type="module">
@@ -185,23 +324,18 @@ const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 const auth=getAuth(app);
 
-let admin=false;
 let products=[];
 let editingId=null;
+let admin=false;
 
 const container=document.getElementById("products");
 
-/* CAMBIAR SECCIONES */
-window.showSection=id=>{
-document.getElementById("productsSection").style.display="none";
-document.getElementById("addSection").style.display="none";
-document.getElementById(id).style.display="block";
-};
+/* LOGIN MODAL */
+window.openLogin=()=>loginModal.style.display="flex";
 
-/* RENDER PRODUCTOS */
+/* RENDER */
 function render(list){
 container.innerHTML="";
-
 list.forEach(p=>{
 const div=document.createElement("div");
 div.className="card";
@@ -209,19 +343,16 @@ div.className="card";
 div.innerHTML=`
 <img src="${p.image}">
 <h3>${p.title}</h3>
-<p>$${p.price}</p>
-<p>${p.category}</p>
+<div class="price">$${p.price}</div>
 
-<a target="_blank"
-href="https://api.whatsapp.com/send?text=Hola quiero este producto: ${p.title}">
-<button>Comprar</button></a>
+<button class="buyBtn"
+onclick="window.open('https://api.whatsapp.com/send?text=Hola quiero comprar ${p.title}')">
+Comprar por WhatsApp
+</button>
 
 ${admin?`
-<button class="adminBtn"
-onclick="editProduct('${p.id}')">Editar</button>
-
-<button class="adminBtn"
-onclick="deleteProduct('${p.id}')">Eliminar</button>
+<button class="adminBtn" onclick="editProduct('${p.id}')">Editar</button>
+<button class="adminBtn" onclick="deleteProduct('${p.id}')">Eliminar</button>
 `:""}
 `;
 
@@ -229,7 +360,7 @@ container.appendChild(div);
 });
 }
 
-/* TIEMPO REAL */
+/* REALTIME */
 onSnapshot(collection(db,"products"),snap=>{
 products=[];
 snap.forEach(d=>{
@@ -240,11 +371,17 @@ render(products);
 
 /* GUARDAR */
 window.saveProduct=async()=>{
+const img=image.value
+.replace("imgur.com/","i.imgur.com/")
+.endsWith(".jpg")||image.value.endsWith(".png")
+? image.value
+: image.value+".jpg";
+
 if(editingId){
 await updateDoc(doc(db,"products",editingId),{
 title:title.value,
 price:price.value,
-image:image.value,
+image:img,
 category:category.value
 });
 editingId=null;
@@ -252,15 +389,11 @@ editingId=null;
 await addDoc(collection(db,"products"),{
 title:title.value,
 price:price.value,
-image:image.value,
+image:img,
 category:category.value
 });
 }
-
-title.value="";
-price.value="";
-image.value="";
-alert("Guardado");
+alert("Producto guardado");
 };
 
 /* EDITAR */
@@ -274,7 +407,7 @@ editingId=id;
 showSection("addSection");
 };
 
-/* ELIMINAR */
+/* BORRAR */
 window.deleteProduct=id=>{
 deleteDoc(doc(db,"products",id));
 };
@@ -288,17 +421,23 @@ render(products.filter(p=>p.title.toLowerCase().includes(q)));
 /* LOGIN */
 window.login=()=>{
 signInWithEmailAndPassword(auth,email.value,password.value)
-.catch(()=>alert("Error login"));
+.then(()=>loginModal.style.display="none")
+.catch(()=>alert("Error de acceso"));
 };
 
 window.logout=()=>signOut(auth);
 
 onAuthStateChanged(auth,user=>{
 admin=!!user;
-
-loginBox.style.display=admin?"none":"block";
-logoutBtn.style.display=admin?"block":"none";
+sidebar.style.display=admin?"block":"none";
 });
+
+/* SECTIONS */
+window.showSection=id=>{
+productsSection.style.display="none";
+addSection.style.display="none";
+document.getElementById(id).style.display="block";
+};
 
 </script>
 
