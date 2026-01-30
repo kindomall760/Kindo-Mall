@@ -1,269 +1,463 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kindo Mall</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kindo Mall | Exclusive Shop 2026</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
 
-<style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial;background:#eaeded}
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
 
-/* HEADER */
-header{
-background:#131921;
-color:white;
-padding:10px;
-display:flex;
-justify-content:space-between;
-align-items:center;
-flex-wrap:wrap;
-}
+        .product-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-.logo{font-size:22px;font-weight:bold}
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
 
-.searchBox input{
-padding:10px;
-border:none;
-border-radius:6px;
-width:300px;
-}
+        .admin-modal {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+        }
 
-/* LAYOUT */
-.layout{display:flex}
+        .rifa-gradient {
+            background: linear-gradient(90deg, #dc2626, #991b1b, #dc2626);
+            background-size: 200% auto;
+            animation: shine 3s linear infinite;
+        }
 
-.sidebar{
-width:220px;
-background:#232f3e;
-color:white;
-min-height:100vh;
-padding:15px;
-}
+        @keyframes shine {
+            to { background-position: 200% center; }
+        }
 
-.sidebar button{
-width:100%;
-padding:12px;
-margin-bottom:8px;
-background:#37475a;
-color:white;
-border:none;
-cursor:pointer;
-border-radius:6px;
-}
-
-.sidebar button:hover{background:#485769}
-
-.content{flex:1;padding:20px}
-
-/* PRODUCTOS */
-.products{
-display:grid;
-grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
-gap:18px;
-}
-
-.card{
-background:white;
-border-radius:10px;
-padding:12px;
-box-shadow:0 2px 6px rgba(0,0,0,.15);
-display:flex;
-flex-direction:column;
-}
-
-.card img{
-width:100%;
-height:200px;
-object-fit:contain;
-background:white;
-border-radius:8px;
-padding:5px;
-}
-
-.card:hover img{
-transform:scale(1.05);
-transition:.3s;
-}
-
-.price{font-weight:bold;margin:6px 0}
-
-.buyBtn{
-background:#ffd814;
-border:none;
-padding:10px;
-border-radius:8px;
-cursor:pointer;
-}
-
-.buyBtn:hover{background:#f7ca00}
-
-/* FOOTER */
-footer{
-background:#131921;
-color:white;
-text-align:center;
-padding:20px;
-margin-top:20px;
-}
-
-/* BOTON WHATSAPP */
-.whatsapp{
-position:fixed;
-bottom:20px;
-right:20px;
-background:#25D366;
-color:white;
-font-size:24px;
-padding:15px;
-border-radius:50%;
-text-decoration:none;
-}
-
-/* MENU MOVIL */
-.mobileMenu{
-display:none;
-position:fixed;
-bottom:0;
-width:100%;
-background:#131921;
-color:white;
-justify-content:space-around;
-padding:10px;
-}
-
-/* TABLET */
-@media(max-width:1000px){
-.products{grid-template-columns:repeat(3,1fr)}
-}
-
-/* MOVIL */
-@media(max-width:800px){
-
-header{
-flex-direction:column;
-text-align:center;
-gap:8px;
-}
-
-.searchBox input{width:100%}
-
-.layout{flex-direction:column}
-
-.sidebar{display:none}
-
-.content{padding:10px}
-
-.products{
-grid-template-columns:repeat(2,1fr);
-gap:10px;
-}
-
-.card img{height:150px}
-
-.mobileMenu{display:flex}
-
-body{padding-bottom:60px}
-}
-
-/* TELEFONO PEQUEÑO */
-@media(max-width:450px){
-.products{grid-template-columns:1fr}
-}
-</style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
+<body class="text-slate-900">
 
-<body>
+    <!-- ANUNCIO DE RIFA -->
+    <div class="rifa-gradient text-white py-2 px-4 text-center text-xs md:text-sm font-bold tracking-wide">
+        🎉 ¡RIFA TODOS LOS DOMINGOS! Participa por solo $1,000 pesos y gana grandes premios. 🎟️
+    </div>
 
-<header>
-<div class="logo">🛒 Kindo Mall</div>
+    <!-- NAVBAR -->
+    <nav class="sticky top-0 z-50 glass border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex items-center gap-2 group cursor-pointer" onclick="window.location.reload()">
+                    <div class="bg-red-600 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-red-200 group-hover:rotate-6 transition-transform">
+                        <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+                    </div>
+                    <span class="text-2xl font-black tracking-tighter text-slate-800 uppercase">KINDO<span class="text-red-600">MALL</span></span>
+                </div>
 
-<div class="searchBox">
-<input id="search" placeholder="Buscar productos..." onkeyup="filterProducts()">
-</div>
+                <!-- Buscador -->
+                <div class="hidden md:flex flex-1 max-w-md mx-8">
+                    <div class="relative w-full">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                        <input id="search" onkeyup="filterProducts()" type="text" placeholder="Buscar en el catálogo 2026..." 
+                            class="w-full bg-slate-100 border-none rounded-2xl py-2.5 pl-11 pr-4 focus:ring-2 focus:ring-red-500 transition-all outline-none">
+                    </div>
+                </div>
 
-<button onclick="openCart()">🛒 <span id="cartCount">0</span></button>
-</header>
+                <!-- Botones Accion -->
+                <div class="flex items-center gap-3">
+                    <button onclick="openAdmin()" class="p-2.5 text-slate-500 hover:text-red-600 transition-colors" title="Panel de Administración">
+                        <i data-lucide="settings" class="w-6 h-6"></i>
+                    </button>
+                    <button onclick="openCart()" class="relative p-2.5 bg-slate-900 text-white rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-slate-200">
+                        <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                        <span id="cartCount" class="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-slate-900">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- BARRA DE CATEGORÍAS AMPLIADA (Aquí están los filtros visuales) -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-2" id="categoryCapsules">
+                <button onclick="filterByCategory('Todas')" class="cat-btn px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap bg-red-600 text-white shadow-md transition-all">Todas</button>
+                <button onclick="filterByCategory('Hogar')" class="cat-btn px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap bg-white border border-slate-200 hover:border-red-600 transition-all">Hogar</button>
+                <button onclick="filterByCategory('Ferretería')" class="cat-btn px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap bg-white border border-slate-200 hover:border-red-600 transition-all">Ferretería</button>
+                <button onclick="filterByCategory('Luces')" class="cat-btn px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap bg-white border border-slate-200 hover:border-red-600 transition-all">Luces</button>
+                <button onclick="filterByCategory('Tecnología')" class="cat-btn px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap bg-white border border-slate-200 hover:border-red-600 transition-all">Tecnología</button>
+                <button onclick="filterByCategory('Calzado')" class="cat-btn px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap bg-white border border-slate-200 hover:border-red-600 transition-all">Calzado</button>
+                <button onclick="filterByCategory('Ropa')" class="cat-btn px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap bg-white border border-slate-200 hover:border-red-600 transition-all">Ropa</button>
+                <button onclick="filterByCategory('Relojes')" class="cat-btn px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap bg-white border border-slate-200 hover:border-red-600 transition-all">Relojes</button>
+                <button onclick="filterByCategory('Accesorios')" class="cat-btn px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap bg-white border border-slate-200 hover:border-red-600 transition-all">Accesorios</button>
+            </div>
+        </div>
+    </nav>
 
-<div class="layout">
+    <!-- HERO SECTION -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="relative rounded-[2.5rem] bg-slate-900 overflow-hidden p-8 md:p-16 flex flex-col md:flex-row items-center gap-8">
+            <div class="z-10 text-center md:text-left">
+                <span class="text-red-500 font-bold uppercase tracking-widest text-sm">Temporada 2026</span>
+                <h2 class="text-4xl md:text-6xl font-black text-white mt-2 mb-6 leading-tight uppercase tracking-tighter">Variedad <br> & Calidad.</h2>
+                <div class="flex flex-wrap justify-center md:justify-start gap-4">
+                    <a href="https://www.instagram.com/kindomall" target="_blank" class="bg-white text-slate-900 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-red-50 transition-all">
+                        <i data-lucide="instagram" class="w-5 h-5 text-pink-600"></i> @kindomall
+                    </a>
+                </div>
+            </div>
+            <div class="hidden md:block absolute right-0 bottom-0 top-0 w-1/2 bg-gradient-to-l from-red-600/10 to-transparent"></div>
+        </div>
+    </div>
 
-<div class="sidebar">
-<button onclick="showProducts()">Productos</button>
-</div>
+    <!-- PRODUCTOS -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        <div class="flex items-center justify-between mb-8 border-b border-slate-100 pb-4">
+            <h3 class="text-2xl font-black text-slate-800 uppercase tracking-tight" id="sectionTitle">Todos los Productos</h3>
+            <span class="text-slate-400 font-bold text-sm" id="itemCount">0 items</span>
+        </div>
 
-<div class="content">
-<div class="products" id="products"></div>
-</div>
+        <div id="products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 text-center py-10">
+            <p class="col-span-full text-slate-400">Cargando catálogo...</p>
+        </div>
+    </main>
 
-</div>
+    <!-- INFO & UBICACIÓN -->
+    <section class="bg-slate-100 py-16 border-t border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h4 class="text-3xl font-black mb-4 uppercase">Visítanos</h4>
+                    <p class="text-slate-600 mb-6 font-medium">Calidad y exclusividad en un solo lugar. Encuentra las mejores marcas internacionales.</p>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm">
+                            <div class="bg-red-100 p-3 rounded-xl"><i data-lucide="map-pin" class="text-red-600"></i></div>
+                            <div>
+                                <p class="font-bold">Ubicación Central</p>
+                                <p class="text-sm text-slate-500 italic">Próximamente nueva sucursal 2026</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm">
+                            <div class="bg-red-100 p-3 rounded-xl"><i data-lucide="calendar" class="text-red-600"></i></div>
+                            <div>
+                                <p class="font-bold">Rifa Semanal</p>
+                                <p class="text-sm text-slate-500">Sorteo en vivo: Domingos 7:00 PM</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="rounded-[2.5rem] overflow-hidden shadow-2xl h-64 bg-slate-900 flex items-center justify-center p-8">
+                     <div class="text-center">
+                        <i data-lucide="shopping-bag" class="w-12 h-12 text-red-600 mx-auto mb-4"></i>
+                        <p class="text-white font-black text-xl">KINDO MALL</p>
+                        <p class="text-slate-500 text-sm italic">Hogar, Ferretería y más</p>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-<!-- MENU MOVIL -->
-<div class="mobileMenu">
-<button onclick="showProducts()">🏠</button>
-<button onclick="openCart()">🛒</button>
-<a href="https://api.whatsapp.com/message/GHE4RKLD422VO1?autoload=1&app_absent=0" style="color:white;text-decoration:none;">💬</a>
-</div>
+    <!-- FOOTER -->
+    <footer class="bg-white py-12 border-t border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-slate-500 font-bold mb-4 uppercase tracking-widest text-xl text-red-600">KINDO MALL 2026</p>
+            <div class="flex justify-center gap-6 mb-8">
+                <a href="https://www.instagram.com/kindomall" class="text-slate-400 hover:text-red-600 transition-colors"><i data-lucide="instagram"></i></a>
+                <a href="#" class="text-slate-400 hover:text-red-600 transition-colors"><i data-lucide="facebook"></i></a>
+                <a href="https://api.whatsapp.com/message/GHE4RKLD422VO1" class="text-slate-400 hover:text-red-600 transition-colors"><i data-lucide="phone"></i></a>
+            </div>
+            <p class="text-slate-400 text-sm font-medium">© 2026 Todos los derechos reservados • Desarrollado por Cesar Dev</p>
+        </div>
+    </footer>
 
-<!-- BOTON WHATSAPP -->
-<a class="whatsapp"
-href="https://api.whatsapp.com/message/GHE4RKLD422VO1?autoload=1&app_absent=0"
-target="_blank">💬</a>
+    <!-- MODAL ADMINISTRADOR -->
+    <div id="adminModal" class="fixed inset-0 z-[100] admin-modal hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl">
+            <!-- Login Admin -->
+            <div id="adminLogin" class="p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-black">Acceso Admin</h3>
+                    <button onclick="closeAdmin()" class="text-slate-400 hover:text-slate-900"><i data-lucide="x"></i></button>
+                </div>
+                <p class="text-slate-500 text-sm mb-4">Introduce la clave de acceso para gestionar el catálogo.</p>
+                <input id="adminPass" type="password" placeholder="Contraseña de acceso" class="w-full bg-slate-100 border-none rounded-2xl p-4 mb-4 outline-none focus:ring-2 focus:ring-red-500">
+                <button onclick="checkAdmin()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-bold hover:bg-red-600 transition-all">Entrar</button>
+            </div>
+            
+            <!-- Panel Admin (Aquí están las opciones para subir productos) -->
+            <div id="adminPanel" class="p-8 hidden max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-black">Nuevo Producto</h3>
+                    <button onclick="closeAdmin()" class="text-slate-400"><i data-lucide="x"></i></button>
+                </div>
+                <div class="space-y-4 text-left">
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 ml-2 uppercase">Título</label>
+                        <input id="newTitle" placeholder="Ej: Taladro Inalámbrico" class="w-full bg-slate-100 border-none rounded-2xl p-4 outline-none focus:ring-2 focus:ring-red-500 mt-1">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 ml-2 uppercase">Precio ($)</label>
+                        <input id="newPrice" type="number" placeholder="Ej: 4500" class="w-full bg-slate-100 border-none rounded-2xl p-4 outline-none focus:ring-2 focus:ring-red-500 mt-1">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 ml-2 uppercase">Categoría</label>
+                        <select id="newCategory" class="w-full bg-slate-100 border-none rounded-2xl p-4 outline-none focus:ring-2 focus:ring-red-500 mt-1 appearance-none">
+                            <option value="Hogar">Hogar</option>
+                            <option value="Ferretería">Ferretería</option>
+                            <option value="Luces">Luces</option>
+                            <option value="Tecnología">Tecnología</option>
+                            <option value="Calzado">Calzado</option>
+                            <option value="Ropa">Ropa</option>
+                            <option value="Accesorios">Accesorios</option>
+                            <option value="Relojes">Relojes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 ml-2 uppercase">URL de Imagen</label>
+                        <input id="newImage" placeholder="Enlace de la foto..." class="w-full bg-slate-100 border-none rounded-2xl p-4 outline-none focus:ring-2 focus:ring-red-500 mt-1">
+                    </div>
+                    <button id="addBtn" onclick="saveToFirebase()" class="w-full bg-red-600 text-white p-4 rounded-2xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-200 mt-4">Subir Producto</button>
+                </div>
+                <hr class="my-6 border-slate-100">
+                <button onclick="logoutAdmin()" class="w-full text-slate-400 text-sm font-bold flex items-center justify-center gap-2 hover:text-red-600 transition-colors uppercase tracking-widest">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> Salir del Panel
+                </button>
+            </div>
+        </div>
+    </div>
 
-<footer>
-Instagram @kindomall • Ubicación disponible • Desarrollado por Cesar Dev
-</footer>
+    <!-- WHATSAPP FLOATING -->
+    <a href="https://api.whatsapp.com/message/GHE4RKLD422VO1?autoload=1&app_absent=0" 
+       target="_blank" 
+       class="fixed bottom-8 right-8 z-[100] bg-[#25D366] text-white p-4 rounded-3xl shadow-2xl hover:scale-110 transition-transform flex items-center gap-2 group">
+        <i data-lucide="message-circle" class="w-8 h-8"></i>
+        <span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 font-bold whitespace-nowrap px-0 group-hover:px-2">Pedir por WhatsApp</span>
+    </a>
 
-<script>
-let products=[
-{id:1,title:"Producto prueba",price:10,image:"https://via.placeholder.com/300"}
-];
+    <!-- FIREBASE & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
-let cart=[];
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQd2Aw91y8Kb0c9EoDJTd9FvdlsfRSDqI",
+            authDomain: "kindo-mall.firebaseapp.com",
+            projectId: "kindo-mall",
+            storageBucket: "kindo-mall.appspot.com",
+            messagingSenderId: "463969508011",
+            appId: "1:463969508011:web:1ee78cb55a67dc0a27f5ee"
+        };
 
-function showProducts(){
-renderProducts(products);
-}
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-function filterProducts(){
-let q=search.value.toLowerCase();
-renderProducts(products.filter(p=>p.title.toLowerCase().includes(q)));
-}
+        window.products = [];
+        window.cart = [];
+        let authenticated = false;
+        let currentFilter = 'Todas';
 
-function renderProducts(list){
-products.innerHTML=list.map(p=>`
-<div class="card">
-<img src="${p.image}">
-<b>${p.title}</b>
-<div class="price">$${p.price}</div>
-<button class="buyBtn" onclick="addToCart('${p.id}')">
-Agregar al carrito
-</button>
-</div>
-`).join("");
-}
+        const productsDiv = document.getElementById("products");
+        const cartCount = document.getElementById("cartCount");
+        const itemCountLabel = document.getElementById("itemCount");
+        const sectionTitle = document.getElementById("sectionTitle");
 
-function addToCart(id){
-let p=products.find(x=>x.id==id);
-cart.push(p);
-cartCount.textContent=cart.length;
-alert("Producto agregado");
-}
+        /* PRODUCTOS EN TIEMPO REAL */
+        onSnapshot(collection(db, "products"), snapshot => {
+            window.products = [];
+            snapshot.forEach(doc => {
+                window.products.push({ id: doc.id, ...doc.data() });
+            });
+            applyFilters();
+        });
 
-function openCart(){
-if(cart.length==0){
-alert("Carrito vacío");
-return;
-}
+        /* LÓGICA DE FILTRADO COMBINADO */
+        window.applyFilters = function() {
+            let list = window.products;
+            
+            // Filtro por categoría
+            if(currentFilter !== 'Todas') {
+                list = list.filter(p => p.category === currentFilter);
+                sectionTitle.innerText = currentFilter;
+            } else {
+                sectionTitle.innerText = "Todos los Productos";
+            }
 
-let text="Hola quiero comprar:%0A";
-cart.forEach(p=>{
-text+=`• ${p.title} - $${p.price}%0A`;
-});
+            // Filtro por búsqueda (si hay texto)
+            const q = document.getElementById("search").value.toLowerCase();
+            if(q) {
+                list = list.filter(p => p.title.toLowerCase().includes(q));
+            }
 
-window.open("https://api.whatsapp.com/send?text="+text);
-}
+            itemCountLabel.innerText = `${list.length} items`;
+            renderProducts(list);
+        };
 
-renderProducts(products);
-</script>
+        window.filterByCategory = function(cat) {
+            currentFilter = cat;
+            
+            // Actualizar estilo visual de las cápsulas
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if(btn.innerText === cat) {
+                    btn.classList.remove('bg-white', 'text-slate-900', 'border-slate-200');
+                    btn.classList.add('bg-red-600', 'text-white', 'shadow-md');
+                } else {
+                    btn.classList.add('bg-white', 'text-slate-900', 'border-slate-200');
+                    btn.classList.remove('bg-red-600', 'text-white', 'shadow-md');
+                }
+            });
 
+            applyFilters();
+        };
+
+        window.filterProducts = () => applyFilters();
+
+        /* RENDER */
+        window.renderProducts = function(list) {
+            if(list.length === 0) {
+                productsDiv.innerHTML = `<div class="col-span-full py-20"><i data-lucide="package-x" class="mx-auto w-12 h-12 text-slate-200 mb-2"></i><p class="text-slate-400 font-bold">No hay productos en esta sección.</p></div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            productsDiv.innerHTML = list.map(p => `
+                <div class="product-card bg-white rounded-[2rem] p-4 border border-slate-100 flex flex-col group relative">
+                    ${authenticated ? `
+                    <button onclick="deleteProduct('${p.id}')" class="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur text-red-600 p-2.5 rounded-full shadow-lg hover:bg-red-600 hover:text-white transition-all transform hover:scale-110">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    </button>` : ''}
+                    <div class="relative overflow-hidden rounded-[1.5rem] bg-slate-50 mb-4 aspect-square flex items-center justify-center p-4">
+                        <img src="${p.image}" class="max-w-full max-h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500" onerror="this.src='https://via.placeholder.com/400?text=Kindo+Mall'">
+                        <div class="absolute top-3 left-3">
+                            <span class="bg-white/90 backdrop-blur-sm text-[10px] font-black px-3 py-1 rounded-full text-slate-800 shadow-sm uppercase tracking-widest border border-slate-100">${p.category || 'Premium'}</span>
+                        </div>
+                    </div>
+                    <div class="px-2 flex-grow text-left">
+                        <h4 class="font-bold text-slate-800 text-lg mb-1 line-clamp-1 uppercase tracking-tight">${p.title}</h4>
+                        <div class="flex items-center justify-between mt-auto">
+                            <span class="text-2xl font-black text-red-600">$${Number(p.price).toLocaleString()}</span>
+                            <button onclick="addToCart('${p.id}')" 
+                                class="bg-slate-900 text-white p-3 rounded-2xl hover:bg-red-600 transition-colors shadow-lg active:scale-90">
+                                <i data-lucide="plus" class="w-6 h-6"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join("");
+            lucide.createIcons();
+        };
+
+        /* FUNCIONES ADMIN */
+        window.openAdmin = () => {
+            document.getElementById("adminModal").classList.remove("hidden");
+            if(authenticated) {
+                document.getElementById("adminLogin").classList.add("hidden");
+                document.getElementById("adminPanel").classList.remove("hidden");
+            }
+        };
+
+        window.closeAdmin = () => document.getElementById("adminModal").classList.add("hidden");
+        
+        window.checkAdmin = () => {
+            const passInput = document.getElementById("adminPass");
+            if(passInput.value === "kindo2026") {
+                authenticated = true;
+                document.getElementById("adminLogin").classList.add("hidden");
+                document.getElementById("adminPanel").classList.remove("hidden");
+                passInput.value = "";
+                applyFilters();
+                lucide.createIcons();
+            } else {
+                alert("Clave incorrecta.");
+                passInput.value = "";
+            }
+        };
+
+        window.logoutAdmin = () => {
+            authenticated = false;
+            document.getElementById("adminLogin").classList.remove("hidden");
+            document.getElementById("adminPanel").classList.add("hidden");
+            applyFilters();
+            lucide.createIcons();
+        };
+
+        window.saveToFirebase = async () => {
+            const title = document.getElementById("newTitle").value;
+            const price = document.getElementById("newPrice").value;
+            const category = document.getElementById("newCategory").value;
+            const image = document.getElementById("newImage").value;
+
+            if(!title || !price || !image) return alert("Completa todos los campos.");
+
+            const btn = document.getElementById("addBtn");
+            btn.disabled = true;
+            btn.innerText = "Subiendo...";
+
+            try {
+                await addDoc(collection(db, "products"), {
+                    title, 
+                    price: parseFloat(price), 
+                    category, 
+                    image, 
+                    timestamp: new Date().getTime()
+                });
+                alert("¡Publicado!");
+                document.getElementById("newTitle").value = "";
+                document.getElementById("newPrice").value = "";
+                document.getElementById("newImage").value = "";
+            } catch (e) {
+                alert("Error: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Subir Producto";
+            }
+        };
+
+        window.deleteProduct = async (id) => {
+            if(confirm("¿Eliminar definitivamente?")) {
+                await deleteDoc(doc(db, "products", id));
+            }
+        };
+
+        /* CARRITO */
+        window.addToCart = (id) => {
+            const p = window.products.find(x => x.id == id);
+            if(p) {
+                window.cart.push(p);
+                cartCount.textContent = window.cart.length;
+                const btn = event.currentTarget;
+                btn.classList.add('bg-green-600', 'scale-110');
+                setTimeout(() => btn.classList.remove('bg-green-600', 'scale-110'), 600);
+            }
+        };
+
+        window.openCart = () => {
+            if(window.cart.length == 0) return alert("El carrito está vacío.");
+            let text = "👋 *ORDEN KINDO MALL 2026*%0A%0A";
+            let total = 0;
+            window.cart.forEach((p, i) => {
+                text += `*${i+1}.* ${p.title} - $${p.price}%0A`;
+                total += parseFloat(p.price);
+            });
+            text += `%0A💰 *TOTAL:* $${total.toLocaleString()}%0A%0A_Por favor, confírmenme disponibilidad._`;
+            window.open("https://api.whatsapp.com/send?text=" + text);
+        };
+
+        lucide.createIcons();
+    </script>
 </body>
 </html>
