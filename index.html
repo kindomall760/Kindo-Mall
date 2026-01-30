@@ -1,417 +1,410 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { initializeApp, getApps } from 'firebase/app';
-import { 
-  getFirestore, collection, doc, addDoc, onSnapshot, 
-  deleteDoc, serverTimestamp 
-} from 'firebase/firestore';
-import { 
-  getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken
-} from 'firebase/auth';
-import { 
-  Search, X, Plus, Package, Trash2, Refrigerator, Lock, Bed, Drill, 
-  ShoppingCart, Loader2, MessageCircle, Shirt, Image as ImageIcon, CheckCircle2,
-  Instagram, MapPin, Phone
-} from 'lucide-react';
-
-// --- CONFIGURACIÓN Y AYUDANTES ---
-const CATEGORIAS = [
-  { id: 'todos', label: 'Todo el Catálogo', icon: Package },
-  { id: 'ropa', label: 'Ropa y Moda', icon: Shirt },
-  { id: 'herramientas', label: 'Herramientas', icon: Drill },
-  { id: 'hogar', label: 'Hogar y Camas', icon: Bed },
-  { id: 'electro', label: 'Electrodomésticos', icon: Refrigerator }
-];
-
-// Productos manuales asignados directamente del link de Imgur
-const PRODUCTOS_INICIALES = [
-  { id: 'p1', nombre: 'Jeans Premium Slim', precio: 1850, categoria: 'ropa', marca: 'Kindo Style', imagen: 'https://i.imgur.com/8QjZ8pL.jpeg' },
-  { id: 'p2', nombre: 'Poloche Urban White', precio: 950, categoria: 'ropa', marca: 'Kindo Style', imagen: 'https://i.imgur.com/GjY2X8R.jpeg' },
-  { id: 'p3', nombre: 'Tenis Sport Black', precio: 3200, categoria: 'ropa', marca: 'Sport Line', imagen: 'https://i.imgur.com/V7R3L9s.jpeg' },
-  { id: 'p4', nombre: 'Camisa Formal Blue', precio: 1400, categoria: 'ropa', marca: 'Kindo Elite', imagen: 'https://i.imgur.com/S9XQ9X8.jpeg' }
-];
-
-const REDES_SOCIALES = {
-  whatsapp: "18296330000",
-  instagram: "kindomall_santiago",
-  ubicacion: "https://maps.app.goo.gl/santiago-rd" 
-};
-
-const fixImageUrl = (url) => {
-  if (!url || typeof url !== 'string') return "";
-  let trimmed = url.trim();
-  if (trimmed.startsWith('img/')) return trimmed;
-  if (trimmed.includes('imgur.com')) {
-    const idMatch = trimmed.match(/imgur\.com\/(?:a\/|gallery\/|)?([a-zA-Z0-9]+)/);
-    if (idMatch && idMatch[1]) return `https://i.imgur.com/${idMatch[1]}.jpg`;
-  }
-  return trimmed;
-};
-
-export default function App() {
-  const [db, setDb] = useState(null);
-  const [auth, setAuth] = useState(null);
-  const [user, setUser] = useState(null);
-  const [appId] = useState(typeof __app_id !== 'undefined' ? __app_id : 'kindo-mall-santiago');
-  const [errorStatus, setErrorStatus] = useState(null);
-
-  const [view, setView] = useState('home'); 
-  const [productos, setProductos] = useState([]);
-  const [carrito, setCarrito] = useState([]);
-  const [busqueda, setBusqueda] = useState("");
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [categoriaActiva, setCategoriaActiva] = useState('todos');
-  const [loading, setLoading] = useState(true);
-  const [nuevoP, setNuevoP] = useState({ nombre: '', precio: '', categoria: 'ropa', imagen: '', marca: '', tallas: '' });
-  const [previewImg, setPreviewImg] = useState("");
-
-  // Inicialización de Firebase (Regla 3: Auth antes que queries)
-  useEffect(() => {
-    const startFirebase = async () => {
-      try {
-        if (typeof __firebase_config === 'undefined' || !__firebase_config) {
-          setErrorStatus("Configuración faltante");
-          setLoading(false);
-          return;
-        }
-        const config = JSON.parse(__firebase_config);
-        const firebaseApp = getApps().length === 0 ? initializeApp(config) : getApps()[0];
-        const firebaseAuth = getAuth(firebaseApp);
-        const firebaseDb = getFirestore(firebaseApp);
-        
-        setAuth(firebaseAuth);
-        setDb(firebaseDb);
-
-        // Autenticación según especificaciones
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(firebaseAuth, __initial_auth_token);
-        } else {
-          await signInAnonymously(firebaseAuth);
-        }
-
-        const unsubAuth = onAuthStateChanged(firebaseAuth, (u) => {
-          if (u) {
-            setUser(u);
-            setErrorStatus(null);
-          }
-        });
-        return unsubAuth;
-      } catch (err) {
-        console.error("Firebase Init Error:", err);
-        setErrorStatus("Error de conexión");
-        setLoading(false);
-      }
-    };
-    startFirebase();
-  }, []);
-
-  // Carga de datos de Firestore (Regla 1 y 2)
-  useEffect(() => {
-    if (!user || !db) return;
-
-    // Ruta estricta de Firestore
-    const publicCollection = collection(db, 'artifacts', appId, 'public', 'data', 'productos');
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kindo Mall | Catálogo Digital</title>
     
-    const unsub = onSnapshot(publicCollection, 
-      (snap) => {
-        const prods = snap.docs.map(d => ({ 
-          id: d.id, 
-          ...d.data(), 
-          precio: Number(d.data().precio) || 0 
-        }));
+    <!-- Favicon: Letra K en Rojo -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23ef4444%22/><text y=%22.9em%22 x=%22.15em%22 font-size=%2270%22 font-weight=%22bold%22 fill=%22white%22 font-family=%22Arial%22>K</text></svg>">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         
-        // Carga inicial o fallback a productos locales
-        if (prods.length === 0) {
-          setProductos(PRODUCTOS_INICIALES);
-        } else {
-          // Filtrado y ordenado en memoria (Regla 2)
-          setProductos(prods.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
         }
-        setLoading(false);
-      }, 
-      (err) => { 
-        console.error("Firestore Listen Error:", err);
-        setProductos(PRODUCTOS_INICIALES);
-        setLoading(false); 
-      }
-    );
-    return () => unsub();
-  }, [user, db, appId]);
 
-  useEffect(() => { 
-    setPreviewImg(nuevoP.imagen ? fixImageUrl(nuevoP.imagen) : ""); 
-  }, [nuevoP.imagen]);
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
 
-  const totalCarrito = useMemo(() => carrito.reduce((s, p) => s + (Number(p.precio) || 0), 0), [carrito]);
-  
-  const productosFiltrados = useMemo(() => {
-    return productos.filter(p => 
-      (categoriaActiva === 'todos' || p.categoria === categoriaActiva) &&
-      (p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) || p.marca?.toLowerCase().includes(busqueda.toLowerCase()))
-    );
-  }, [productos, categoriaActiva, busqueda]);
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
 
-  const handleAddProduct = async (e) => {
-    e.preventDefault();
-    if (!user || !db || !nuevoP.nombre || !nuevoP.precio) return;
-    try {
-      const publicCollection = collection(db, 'artifacts', appId, 'public', 'data', 'productos');
-      await addDoc(publicCollection, { 
-        ...nuevoP, 
-        precio: parseFloat(nuevoP.precio), 
-        imagen: fixImageUrl(nuevoP.imagen), 
-        timestamp: serverTimestamp() 
-      });
-      setNuevoP({ nombre: '', precio: '', categoria: 'ropa', imagen: '', marca: '', tallas: '' });
-      setView('home');
-    } catch (error) { 
-      console.error("Save error:", error); 
-    }
-  };
+        .product-card:hover .action-buttons {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
-  const handleDeleteProduct = async (id) => {
-    if(!user || !db) return;
-    if (id.startsWith('p')) {
-        setProductos(productos.filter(p => p.id !== id));
-        return;
-    }
-    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'productos', id));
-  };
+        #previewGrid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-height: 280px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+        
+        /* Animación suave para el logo */
+        .logo-k {
+            transition: transform 0.3s ease;
+        }
+        .logo-k:hover {
+            transform: rotate(-5deg) scale(1.05);
+        }
+    </style>
+</head>
+<body class="text-slate-900">
 
-  const enviarWhatsApp = () => {
-    const items = carrito.map(i => `• ${i.nombre} (RD$${i.precio.toLocaleString()})`).join('%0A');
-    window.open(`https://wa.me/${REDES_SOCIALES.whatsapp}?text=Pedido KindoMall:%0A${items}%0A%0A*Total: RD$${totalCarrito.toLocaleString()}*`, '_blank');
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-        <Loader2 className="animate-spin text-red-600 mb-4" size={40} />
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Cargando Kindo Mall...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-red-100 flex flex-col">
-      
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-20 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('home')}>
-            <div className="bg-red-600 w-12 h-12 rounded-2xl text-white shadow-lg shadow-red-200 flex items-center justify-center">
-              <span className="text-2xl font-black italic">K</span>
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="text-xl font-black italic tracking-tighter leading-none">KINDOMALL</h1>
-              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Santiago de los Caballeros</p>
-            </div>
-          </div>
-
-          <div className="flex-1 max-w-md relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input 
-              className="w-full bg-slate-100 rounded-2xl py-3 pl-11 pr-4 text-xs outline-none focus:ring-2 ring-red-500/10 transition-all border border-transparent focus:bg-white" 
-              placeholder="Buscar marcas o prendas..." 
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)} 
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <a href={`https://instagram.com/${REDES_SOCIALES.instagram}`} target="_blank" className="p-3 bg-slate-100 rounded-2xl text-slate-500 hover:text-pink-600 transition-all hidden md:flex">
-              <Instagram size={18} />
-            </a>
-            <button 
-              onClick={() => setView(view === 'admin' ? 'home' : 'admin')} 
-              className={`p-3 rounded-2xl transition-all ${view === 'admin' ? 'bg-black text-white' : 'bg-slate-100 text-slate-500'}`}
-            >
-              <Lock size={18} />
-            </button>
-            <button onClick={() => setIsCartOpen(true)} className="relative p-3 bg-slate-100 rounded-2xl text-slate-500 hover:bg-slate-200 transition-all">
-              <ShoppingCart size={18} />
-              {carrito.length > 0 && <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce">{carrito.length}</span>}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Categorías */}
-      <nav className="bg-white border-b overflow-x-auto scrollbar-hide sticky top-20 z-40">
-        <div className="container mx-auto px-4 flex gap-6 h-12 items-center">
-          {CATEGORIAS.map(cat => (
-            <button key={cat.id} onClick={() => {setCategoriaActiva(cat.id); setView('home');}} className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-2 px-2 h-full border-b-2 transition-all whitespace-nowrap ${categoriaActiva === cat.id ? 'border-red-600 text-red-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
-              <cat.icon size={14} /> {cat.label}
-            </button>
-          ))}
-        </div>
-      </nav>
-
-      <main className="container mx-auto px-4 py-8 max-w-7xl flex-1">
-        {view === 'home' ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
-            {productosFiltrados.map(p => (
-              <div key={p.id} className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden flex flex-col group p-1.5 hover:shadow-2xl transition-all duration-500">
-                <div className="aspect-[3/4] bg-slate-100 rounded-[1.5rem] relative overflow-hidden">
-                  <img 
-                    src={p.imagen} 
-                    alt={p.nombre} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                    onError={(e) => {e.target.src = "https://placehold.co/600x800/f1f5f9/94a3b8?text=Sin+Foto"}} 
-                  />
-                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-lg text-[8px] font-black uppercase text-slate-500 border border-slate-100 shadow-sm">{p.marca || 'Kindo'}</div>
+    <!-- Header -->
+    <header class="sticky top-0 z-40 w-full glass-effect border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <!-- Logo con la letra K -->
+                <div class="logo-k bg-red-600 w-11 h-11 rounded-2xl shadow-lg shadow-red-200 flex items-center justify-center border-2 border-white">
+                    <span class="text-white text-2xl font-black italic">K</span>
                 </div>
-                <div className="p-4 flex flex-col flex-1">
-                  <h3 className="text-xs font-bold text-slate-800 line-clamp-1 mb-1">{p.nombre}</h3>
-                  <div className="mt-auto flex items-end justify-between pt-3">
-                    <div>
-                      <p className="text-[8px] font-black text-slate-400 uppercase leading-none mb-1">Precio</p>
-                      <p className="text-lg font-black text-slate-900 tracking-tighter">RD${p.precio.toLocaleString()}</p>
-                    </div>
-                    <button onClick={() => setCarrito([...carrito, p])} className="bg-black text-white p-3 rounded-2xl hover:bg-red-600 transition-colors shadow-lg active:scale-90"><Plus size={18} /></button>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {productosFiltrados.length === 0 && (
-              <div className="col-span-full py-20 text-center">
-                <Package className="mx-auto text-slate-200 mb-4" size={48} />
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">No hay artículos disponibles en esta categoría</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Admin Panel */
-          <div className="max-w-6xl mx-auto grid md:grid-cols-12 gap-10">
-            <div className="md:col-span-5">
-              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 sticky top-24 shadow-sm">
-                <h2 className="font-black uppercase text-xs mb-8 flex items-center gap-3 text-red-600 italic"><Plus size={18} /> Nuevo Artículo</h2>
-                <div className="mb-6 aspect-[4/3] bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center">
-                  {previewImg ? <img src={previewImg} className="w-full h-full object-cover" /> : <ImageIcon className="text-slate-300" size={32} />}
-                </div>
-                <form onSubmit={handleAddProduct} className="space-y-4">
-                  <input className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none" placeholder="Nombre (ej. Jeans Blue)" value={nuevoP.nombre} onChange={e => setNuevoP({...nuevoP, nombre: e.target.value})} required />
-                  <div className="grid grid-cols-2 gap-4">
-                    <input className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none" placeholder="Marca" value={nuevoP.marca} onChange={e => setNuevoP({...nuevoP, marca: e.target.value})} />
-                    <input className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none font-bold" type="number" placeholder="RD$" value={nuevoP.precio} onChange={e => setNuevoP({...nuevoP, precio: e.target.value})} required />
-                  </div>
-                  <input className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none" placeholder="Link de imagen directo (.jpg)" value={nuevoP.imagen} onChange={e => setNuevoP({...nuevoP, imagen: e.target.value})} />
-                  <select 
-                    className="w-full p-4 bg-slate-50 rounded-2xl text-xs outline-none appearance-none"
-                    value={nuevoP.categoria}
-                    onChange={e => setNuevoP({...nuevoP, categoria: e.target.value})}
-                  >
-                    {CATEGORIAS.filter(c => c.id !== 'todos').map(c => (
-                      <option key={c.id} value={c.id}>{c.label}</option>
-                    ))}
-                  </select>
-                  <button className="w-full bg-black text-white py-5 rounded-3xl font-black uppercase text-[10px] tracking-widest hover:bg-red-600 transition-all shadow-xl">Guardar Catálogo</button>
-                </form>
-              </div>
-            </div>
-            <div className="md:col-span-7 bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm h-fit">
-              <div className="p-8 border-b bg-slate-50/50 flex justify-between items-center"><h2 className="font-black text-xs uppercase tracking-widest text-slate-500">Stock Actual</h2></div>
-              <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-                {productos.map(p => (
-                  <div key={p.id} className="p-5 flex items-center gap-6">
-                    <img src={p.imagen} className="w-16 h-16 rounded-2xl object-cover border" />
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-slate-900">{p.nombre}</p>
-                      <p className="text-sm font-black text-slate-900">RD${p.precio.toLocaleString()}</p>
-                    </div>
-                    <button onClick={() => handleDeleteProduct(p.id)} className="p-3 text-slate-200 hover:text-red-600 transition-all"><Trash2 size={20} /></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Footer / Contacto */}
-      <footer className="bg-white border-t py-12">
-        <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-12 text-center md:text-left">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 justify-center md:justify-start">
-              <div className="bg-red-600 w-10 h-10 rounded-xl text-white flex items-center justify-center font-black italic">K</div>
-              <h2 className="text-lg font-black italic">KINDOMALL</h2>
-            </div>
-            <p className="text-slate-400 text-xs font-medium leading-relaxed max-w-xs mx-auto md:mx-0">Tu destino premium en Santiago de los Caballeros para moda, herramientas y hogar.</p>
-          </div>
-          <div className="space-y-6">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Contacto Directo</h3>
-            <ul className="space-y-4">
-              <li>
-                <a href={`https://wa.me/${REDES_SOCIALES.whatsapp}`} className="flex items-center gap-3 justify-center md:justify-start text-xs font-bold text-slate-500 hover:text-green-500 transition-all">
-                  <div className="p-2 bg-slate-100 rounded-xl"><Phone size={14}/></div>
-                  WhatsApp: +1 (829) 633-0000
-                </a>
-              </li>
-              <li>
-                <a href={`https://instagram.com/${REDES_SOCIALES.instagram}`} className="flex items-center gap-3 justify-center md:justify-start text-xs font-bold text-slate-500 hover:text-pink-600 transition-all">
-                  <div className="p-2 bg-slate-100 rounded-xl"><Instagram size={14}/></div>
-                  @{REDES_SOCIALES.instagram}
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div className="space-y-6">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Nuestra Ubicación</h3>
-            <a href={REDES_SOCIALES.ubicacion} target="_blank" className="flex items-center gap-3 justify-center md:justify-start text-xs font-bold text-slate-500 hover:text-blue-600 transition-all">
-              <div className="p-2 bg-slate-100 rounded-xl"><MapPin size={14}/></div>
-              Santiago de los Caballeros, RD
-            </a>
-            <div className="pt-2">
-              <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">© 2024 KindoMall SNTG. Todos los derechos reservados.</p>
-            </div>
-          </div>
-        </div>
-      </footer>
-
-      {/* Cart Drawer */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
-          <div className="bg-white w-full max-w-md h-full relative z-10 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
-            <div className="p-8 border-b flex justify-between items-center">
-              <div>
-                <h2 className="font-black uppercase text-2xl italic tracking-tighter">Tu Pedido</h2>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Santiago, RD</p>
-              </div>
-              <button onClick={() => setIsCartOpen(false)} className="p-3 bg-slate-100 rounded-2xl text-slate-400 hover:text-black transition-all"><X size={20}/></button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-8 space-y-6">
-              {carrito.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-slate-300 opacity-30">
-                  <ShoppingCart size={64} className="mb-4" />
-                  <p className="text-[10px] font-black uppercase tracking-widest">Carrito vacío</p>
-                </div>
-              ) : (
-                carrito.map((item, i) => (
-                  <div key={i} className="flex gap-4 items-center animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <img src={item.imagen} className="w-16 h-16 rounded-2xl object-cover border" />
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-slate-900 line-clamp-1">{item.nombre}</p>
-                      <p className="text-sm font-black text-slate-900">RD${item.precio.toLocaleString()}</p>
-                    </div>
-                    <button onClick={() => setCarrito(carrito.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-red-600 p-2 transition-colors"><Trash2 size={18}/></button>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="p-8 bg-slate-50 border-t rounded-t-[2.5rem]">
-              <div className="flex justify-between items-end mb-8">
                 <div>
-                  <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block mb-1">Total del pedido</span>
-                  <span className="text-3xl font-black tracking-tighter">RD${totalCarrito.toLocaleString()}</span>
+                    <h1 class="text-2xl font-extrabold tracking-tight text-slate-800">Kindo Mall</h1>
+                    <p class="text-[10px] uppercase tracking-widest font-bold text-red-500 leading-none">Exclusividad Digital</p>
                 </div>
-              </div>
-              <button onClick={enviarWhatsApp} disabled={carrito.length === 0} className="w-full bg-[#25D366] text-white py-5 rounded-3xl font-black uppercase text-xs flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-30 transition-all">
-                <MessageCircle size={22} fill="currentColor" /> Pedir por WhatsApp
-              </button>
             </div>
-          </div>
+            
+            <button onclick="toggleModal('uploadModal', true)" 
+                class="flex items-center gap-2 bg-slate-900 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl transition-all shadow-xl active:scale-95 font-semibold text-sm">
+                <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                <span class="hidden sm:inline">Subir Productos</span>
+            </button>
         </div>
-      )}
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        
+        <!-- Controles: Búsqueda y Filtros -->
+        <div class="flex flex-col lg:flex-row gap-6 mb-12 items-center justify-between">
+            <div class="relative w-full lg:max-w-md">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                <input 
+                    type="text" 
+                    id="searchInput"
+                    oninput="filterProducts()"
+                    placeholder="¿Qué buscas en Kindo Mall?"
+                    class="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-red-500/10 focus:border-red-500 outline-none transition-all shadow-sm text-sm"
+                >
+            </div>
+
+            <div class="flex gap-2 overflow-x-auto w-full lg:w-auto pb-4 lg:pb-0 scrollbar-hide" id="categoryContainer">
+                <!-- Categorías generadas por JS -->
+            </div>
+        </div>
+
+        <!-- Rejilla de Productos -->
+        <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <!-- Productos generados por JS -->
+        </div>
+
+        <!-- Estado Vacío -->
+        <div id="emptyState" class="hidden text-center py-24">
+            <div class="bg-slate-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="image-off" class="w-10 h-10 text-slate-300"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-400">No hay productos que coincidan</h2>
+            <p class="text-slate-400">Intenta con otra búsqueda o categoría.</p>
+        </div>
+    </main>
+
+    <!-- Modal para Subir Fotos -->
+    <div id="uploadModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+        <div class="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
+            <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div class="flex items-center gap-2">
+                    <span class="bg-red-600 text-white w-6 h-6 rounded flex items-center justify-center text-xs font-bold">K</span>
+                    <h2 class="text-xl font-800 text-slate-800">Publicar en Kindo</h2>
+                </div>
+                <button onclick="toggleModal('uploadModal', false)" class="text-slate-400 hover:text-slate-600 p-2">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form id="uploadForm" class="p-8 overflow-y-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Nombre del Producto</label>
+                            <input id="formTitle" required type="text" placeholder="Ej: iPhone 15 Pro" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Categoría</label>
+                                <select id="formCategory" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+                                    <option>Moda</option>
+                                    <option>Electrónica</option>
+                                    <option>Accesorios</option>
+                                    <option>Hogar</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Precio ($)</label>
+                                <input id="formPrice" required type="number" placeholder="0.00" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Descripción Corta</label>
+                            <textarea id="formDesc" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none h-24 resize-none" placeholder="Breve detalle..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Galería de Fotos</label>
+                        <div id="dropzone" onclick="document.getElementById('fileInput').click()" 
+                            class="flex-grow min-h-[200px] border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center p-6 hover:border-red-400 hover:bg-red-50/30 transition-all cursor-pointer group">
+                            <input id="fileInput" type="file" multiple accept="image/*" class="hidden" onchange="previewImages(this)">
+                            <div id="previewGrid" class="hidden"></div>
+                            <div id="dropzoneContent" class="text-center">
+                                <i data-lucide="image-plus" class="w-12 h-12 text-slate-300 mx-auto mb-3 group-hover:text-red-500 transition-colors"></i>
+                                <p class="text-xs font-medium text-slate-500 px-4">Selecciona las mejores fotos para tu catálogo</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="resetPhotos()" id="resetPhotosBtn" class="hidden mt-2 text-xs text-red-500 font-bold hover:underline">Limpiar fotos seleccionadas</button>
+                    </div>
+                </div>
+                
+                <div class="mt-10 flex gap-4">
+                    <button type="button" onclick="toggleModal('uploadModal', false)" class="flex-1 py-4 text-slate-600 font-bold hover:bg-slate-50 rounded-2xl transition-colors">Cerrar</button>
+                    <button type="submit" class="flex-[2] py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 shadow-xl shadow-red-100 transition-all">Publicar Producto</button>
+                </div>
+            </form>
+        </div>
     </div>
-  );
-}
+
+    <!-- Modal Detalle del Producto -->
+    <div id="detailModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
+        <div class="relative w-full max-w-5xl bg-white rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row max-h-[90vh] shadow-2xl">
+            <button onclick="toggleModal('detailModal', false)" class="absolute top-6 right-6 z-10 p-3 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-md transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <div class="md:flex-1 bg-slate-100 flex items-center justify-center p-4 overflow-hidden">
+                <img id="detailImg" src="" class="max-w-full max-h-full object-contain rounded-xl" alt="Producto">
+            </div>
+            <div class="md:w-[450px] p-10 flex flex-col bg-white overflow-y-auto">
+                <span id="detailCat" class="text-red-600 font-extrabold text-xs uppercase tracking-[0.2em] mb-3">CATEGORÍA</span>
+                <h2 id="detailTitle" class="text-4xl font-extrabold text-slate-900 mb-4 leading-tight">Nombre del Producto</h2>
+                <div id="detailPrice" class="text-3xl font-bold text-slate-800 mb-8">$0.00</div>
+                
+                <div class="border-t border-slate-100 pt-8">
+                    <h4 class="font-bold text-slate-900 mb-3">Sobre este producto</h4>
+                    <p id="detailDesc" class="text-slate-500 leading-relaxed text-lg">Descripción completa aquí...</p>
+                </div>
+
+                <div class="mt-auto pt-10">
+                    <button class="w-full py-5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-red-600 transition-all shadow-2xl shadow-slate-200 text-lg">
+                        Contactar Vendedor
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Datos iniciales
+        let products = [
+            { id: 1, title: 'Smartwatch Ultra 2', category: 'Electrónica', price: '799', desc: 'El compañero perfecto para tus aventuras deportivas.', img: 'https://images.unsplash.com/photo-1544117518-30dd0781202f?w=800' },
+            { id: 2, title: 'Camiseta Premium Lino', category: 'Moda', price: '45', desc: 'Hecha con lino orgánico para máxima frescura.', img: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800' },
+            { id: 3, title: 'Cámara Mirrorless 4K', category: 'Electrónica', price: '1250', desc: 'Captura momentos inolvidables con calidad cinematográfica.', img: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800' },
+            { id: 4, title: 'Lentes de Sol Aviador', category: 'Accesorios', price: '120', desc: 'Diseño icónico con protección UV400.', img: 'https://images.unsplash.com/photo-1511499767390-a8a197994838?w=800' }
+        ];
+
+        let currentFilter = 'Todos';
+        const categories = ['Todos', 'Moda', 'Electrónica', 'Accesorios', 'Hogar'];
+        let uploadedFiles = [];
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCategories();
+            renderProducts();
+            lucide.createIcons();
+        });
+
+        function toggleModal(id, show) {
+            const modal = document.getElementById(id);
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+                if(id === 'uploadModal') resetForm();
+            }
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('categoryContainer');
+            container.innerHTML = categories.map(cat => `
+                <button onclick="setFilter('${cat}')" 
+                    class="px-6 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
+                    currentFilter === cat 
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-100 scale-105' 
+                    : 'bg-white text-slate-500 border border-slate-200 hover:border-red-300'
+                }">
+                    ${cat}
+                </button>
+            `).join('');
+        }
+
+        function setFilter(cat) {
+            currentFilter = cat;
+            renderCategories();
+            renderProducts();
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('productGrid');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const empty = document.getElementById('emptyState');
+            
+            const filtered = products.filter(p => {
+                const matchesCat = currentFilter === 'Todos' || p.category === currentFilter;
+                const matchesSearch = p.title.toLowerCase().includes(search);
+                return matchesCat && matchesSearch;
+            });
+
+            if(filtered.length === 0) {
+                grid.classList.add('hidden');
+                empty.classList.remove('hidden');
+            } else {
+                grid.classList.remove('hidden');
+                empty.classList.add('hidden');
+                grid.innerHTML = filtered.map(p => `
+                    <div class="product-card group bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-slate-100 flex flex-col h-full">
+                        <div class="relative aspect-[4/5] overflow-hidden bg-slate-50">
+                            <img src="${p.img}" alt="${p.title}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                            
+                            <div class="action-buttons absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3 translate-y-4">
+                                <button onclick="openDetail(${p.id})" class="p-4 bg-white rounded-2xl text-slate-900 hover:bg-red-50 transition-colors shadow-xl">
+                                    <i data-lucide="eye" class="w-6 h-6"></i>
+                                </button>
+                                <button onclick="deleteProduct(${p.id})" class="p-4 bg-red-500 text-white rounded-2xl hover:bg-red-600 transition-colors shadow-xl">
+                                    <i data-lucide="trash-2" class="w-6 h-6"></i>
+                                </button>
+                            </div>
+
+                            <div class="absolute top-5 left-5">
+                                <span class="px-4 py-1.5 bg-white/90 backdrop-blur rounded-full text-[10px] font-black text-slate-800 uppercase tracking-widest shadow-sm">
+                                    ${p.category}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-7 flex flex-col flex-grow">
+                            <div class="flex justify-between items-start mb-3">
+                                <h3 class="font-extrabold text-xl text-slate-800 leading-tight">${p.title}</h3>
+                                <span class="text-red-600 font-black text-xl">$${p.price}</span>
+                            </div>
+                            <p class="text-slate-400 text-sm line-clamp-2 mb-6 font-medium">${p.desc || 'Sin descripción adicional.'}</p>
+                            
+                            <button onclick="openDetail(${p.id})" class="mt-auto w-full py-3.5 bg-slate-50 hover:bg-red-600 hover:text-white text-slate-600 font-bold rounded-xl transition-all flex items-center justify-center gap-2 group/btn">
+                                Ver Detalles
+                                <i data-lucide="arrow-right" class="w-4 h-4 transition-transform group-hover/btn:translate-x-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                lucide.createIcons();
+            }
+        }
+
+        function previewImages(input) {
+            const grid = document.getElementById('previewGrid');
+            const content = document.getElementById('dropzoneContent');
+            const resetBtn = document.getElementById('resetPhotosBtn');
+            const dropzone = document.getElementById('dropzone');
+
+            grid.innerHTML = '';
+            uploadedFiles = [];
+
+            if (input.files && input.files.length > 0) {
+                grid.classList.remove('hidden');
+                grid.classList.add('grid');
+                content.classList.add('hidden');
+                resetBtn.classList.remove('hidden');
+                dropzone.classList.remove('justify-center');
+
+                Array.from(input.files).forEach(file => {
+                    const url = URL.createObjectURL(file);
+                    uploadedFiles.push(url);
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.className = 'w-full aspect-square object-cover rounded-xl border border-slate-200 shadow-sm';
+                    grid.appendChild(img);
+                });
+            } else {
+                resetPhotos();
+            }
+        }
+
+        function resetPhotos() {
+            const grid = document.getElementById('previewGrid');
+            const content = document.getElementById('dropzoneContent');
+            const resetBtn = document.getElementById('resetPhotosBtn');
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('fileInput');
+
+            fileInput.value = "";
+            grid.innerHTML = '';
+            grid.classList.add('hidden');
+            grid.classList.remove('grid');
+            content.classList.remove('hidden');
+            resetBtn.classList.add('hidden');
+            dropzone.classList.add('justify-center');
+            uploadedFiles = [];
+        }
+
+        document.getElementById('uploadForm').onsubmit = function(e) {
+            e.preventDefault();
+            if (uploadedFiles.length === 0) {
+                alert('Sube al menos una foto del producto');
+                return;
+            }
+
+            const newProducts = uploadedFiles.map((url, index) => ({
+                id: Date.now() + index,
+                title: document.getElementById('formTitle').value,
+                category: document.getElementById('formCategory').value,
+                price: document.getElementById('formPrice').value,
+                desc: document.getElementById('formDesc').value,
+                img: url
+            }));
+
+            products = [...newProducts, ...products];
+            toggleModal('uploadModal', false);
+            renderProducts();
+        };
+
+        function resetForm() {
+            document.getElementById('uploadForm').reset();
+            resetPhotos();
+        }
+
+        function deleteProduct(id) {
+            products = products.filter(p => p.id !== id);
+            renderProducts();
+        }
+
+        function openDetail(id) {
+            const p = products.find(prod => prod.id === id);
+            if(!p) return;
+            
+            document.getElementById('detailImg').src = p.img;
+            document.getElementById('detailTitle').innerText = p.title;
+            document.getElementById('detailCat').innerText = p.category;
+            document.getElementById('detailPrice').innerText = `$${p.price}`;
+            document.getElementById('detailDesc').innerText = p.desc || 'Este es un producto exclusivo de Kindo Mall.';
+            
+            toggleModal('detailModal', true);
+        }
+
+        function filterProducts() {
+            renderProducts();
+        }
+    </script>
+</body>
+</html>
