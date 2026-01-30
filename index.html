@@ -2,57 +2,154 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Kindo Mall</title>
+<title>Kindo Mall Admin</title>
 
 <style>
-body{font-family:Arial;margin:0;background:#f2f2f2;}
-header{background:#c40000;color:white;padding:15px;text-align:center;font-size:24px;}
-input,button{padding:8px;margin:4px;}
-button{background:#c40000;color:white;border:none;cursor:pointer;}
-.products{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;padding:10px;}
-.card{background:white;padding:10px;border-radius:8px;}
-.card img{width:100%;height:150px;object-fit:cover;}
-.adminBtn{background:black;margin-top:5px;}
-footer{background:#222;color:white;text-align:center;padding:15px;}
-a{color:white;}
+body{margin:0;font-family:Arial;background:#f1f3f6;}
+
+header{
+background:#131921;
+color:white;
+padding:15px;
+text-align:center;
+font-size:22px;
+}
+
+.layout{
+display:flex;
+min-height:100vh;
+}
+
+/* SIDEBAR */
+.sidebar{
+width:220px;
+background:#232f3e;
+color:white;
+padding:15px;
+}
+
+.sidebar h3{
+margin-top:0;
+}
+
+.sidebar button{
+width:100%;
+margin:5px 0;
+padding:10px;
+background:#37475a;
+border:none;
+color:white;
+cursor:pointer;
+}
+
+/* CONTENT */
+.content{
+flex:1;
+padding:15px;
+}
+
+input,select,button{
+padding:8px;
+margin:4px;
+}
+
+button{
+background:#ff9900;
+border:none;
+cursor:pointer;
+}
+
+.products{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:12px;
+}
+
+.card{
+background:white;
+padding:10px;
+border-radius:8px;
+box-shadow:0 2px 6px rgba(0,0,0,.1);
+}
+
+.card img{
+width:100%;
+height:170px;
+object-fit:cover;
+}
+
+.adminBtn{
+background:#232f3e;
+color:white;
+margin-top:5px;
+}
+
 #adminPanel,#logoutBtn{display:none;}
+
+footer{
+background:#131921;
+color:white;
+text-align:center;
+padding:15px;
+}
 </style>
 </head>
 
 <body>
 
-<header>Kindo Mall</header>
+<header>Kindo Mall - Panel Admin</header>
 
-<div id="loginBox" style="padding:10px;background:white;margin:10px;">
-<h3>Panel administrador</h3>
-<input id="email" placeholder="Correo">
-<input id="password" type="password" placeholder="Contraseña">
+<div class="layout">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+<h3>Panel</h3>
+
+<button onclick="showSection('productsSection')">Productos</button>
+<button onclick="showSection('addSection')">Agregar</button>
+<button id="logoutBtn" onclick="logout()">Cerrar sesión</button>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+<!-- LOGIN -->
+<div id="loginBox">
+<h3>Login Administrador</h3>
+<input id="email" placeholder="Correo"><br>
+<input id="password" type="password" placeholder="Contraseña"><br>
 <button onclick="login()">Entrar</button>
 </div>
 
-<button id="logoutBtn" onclick="logout()">Cerrar sesión</button>
-
-<div id="adminPanel" style="padding:10px;">
-<h3>Agregar producto</h3>
-<input id="title" placeholder="Nombre"><br>
-<input id="price" placeholder="Precio"><br>
-<input id="image" placeholder="URL imagen"><br>
-<button onclick="addProduct()">Guardar</button>
+<!-- PRODUCTOS -->
+<div id="productsSection">
+<input id="search" placeholder="Buscar producto..." onkeyup="filterProducts()">
+<div class="products" id="products"></div>
 </div>
 
-<div class="products" id="products"></div>
+<!-- AGREGAR -->
+<div id="addSection" style="display:none;">
+<h3>Agregar / Editar Producto</h3>
+
+<input id="title" placeholder="Nombre"><br>
+<input id="price" placeholder="Precio"><br>
+<input id="image" placeholder="URL Imagen"><br>
+
+<select id="category">
+<option>General</option>
+<option>Ropa</option>
+<option>Electrónica</option>
+<option>Accesorios</option>
+</select><br>
+
+<button onclick="saveProduct()">Guardar</button>
+</div>
+
+</div>
+</div>
 
 <footer>
-Instagram:
-<a href="https://www.instagram.com/kindomall/" target="_blank">@kindomall</a>
-<br>
-WhatsApp:
-<a href="https://api.whatsapp.com/message/GHE4RKLD422VO1" target="_blank">Contactar</a>
-<br>
-Ubicación:
-<a href="https://maps.app.goo.gl/gWtkL2p69zGwPBgF9" target="_blank">Ver mapa</a>
-<br><br>
-Desarrollado por Cesar Dev
+Instagram @kindomall • WhatsApp disponible • Desarrollado por Cesar Dev
 </footer>
 
 <script type="module">
@@ -62,7 +159,7 @@ import { initializeApp } from
 
 import {
 getFirestore, collection, addDoc,
-onSnapshot, deleteDoc, doc
+onSnapshot, deleteDoc, doc, updateDoc
 } from
 "https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore.js";
 
@@ -74,92 +171,133 @@ onAuthStateChanged
 } from
 "https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
 
-/* CONFIG */
-const firebaseConfig = {
-apiKey: "AIzaSyCQd2Aw91y8Kb0c9EoDJTd9FvdlsfRSDqI",
-authDomain: "kindo-mall.firebaseapp.com",
-projectId: "kindo-mall",
-storageBucket: "kindo-mall.appspot.com",
-messagingSenderId: "463969508011",
-appId: "1:463969508011:web:1ee78cb55a67dc0a27f5ee"
+/* FIREBASE CONFIG */
+const firebaseConfig={
+apiKey:"AIzaSyCQd2Aw91y8Kb0c9EoDJTd9FvdlsfRSDqI",
+authDomain:"kindo-mall.firebaseapp.com",
+projectId:"kindo-mall",
+storageBucket:"kindo-mall.appspot.com",
+messagingSenderId:"463969508011",
+appId:"1:463969508011:web:1ee78cb55a67dc0a27f5ee"
 };
 
-/* INIT */
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+const auth=getAuth(app);
 
-const container = document.getElementById("products");
-let admin = false;
+let admin=false;
+let products=[];
+let editingId=null;
 
-/* RENDER */
-function renderProducts(list){
-container.innerHTML = "";
+const container=document.getElementById("products");
+
+/* CAMBIAR SECCIONES */
+window.showSection=id=>{
+document.getElementById("productsSection").style.display="none";
+document.getElementById("addSection").style.display="none";
+document.getElementById(id).style.display="block";
+};
+
+/* RENDER PRODUCTOS */
+function render(list){
+container.innerHTML="";
 
 list.forEach(p=>{
-const div = document.createElement("div");
+const div=document.createElement("div");
 div.className="card";
 
-div.innerHTML = `
+div.innerHTML=`
 <img src="${p.image}">
 <h3>${p.title}</h3>
-<p>Precio: $${p.price}</p>
-${admin ? `<button class="adminBtn"
-onclick="deleteProduct('${p.id}')">Eliminar</button>` : ""}
+<p>$${p.price}</p>
+<p>${p.category}</p>
+
+<a target="_blank"
+href="https://api.whatsapp.com/send?text=Hola quiero este producto: ${p.title}">
+<button>Comprar</button></a>
+
+${admin?`
+<button class="adminBtn"
+onclick="editProduct('${p.id}')">Editar</button>
+
+<button class="adminBtn"
+onclick="deleteProduct('${p.id}')">Eliminar</button>
+`:""}
 `;
 
 container.appendChild(div);
 });
 }
 
-/* FIRESTORE REALTIME */
-onSnapshot(collection(db,"products"), snap=>{
-let arr=[];
+/* TIEMPO REAL */
+onSnapshot(collection(db,"products"),snap=>{
+products=[];
 snap.forEach(d=>{
-arr.push({id:d.id,...d.data()});
+products.push({id:d.id,...d.data()});
 });
-renderProducts(arr);
+render(products);
 });
 
-/* AGREGAR PRODUCTO */
-window.addProduct = async ()=>{
+/* GUARDAR */
+window.saveProduct=async()=>{
+if(editingId){
+await updateDoc(doc(db,"products",editingId),{
+title:title.value,
+price:price.value,
+image:image.value,
+category:category.value
+});
+editingId=null;
+}else{
 await addDoc(collection(db,"products"),{
 title:title.value,
 price:price.value,
-image:image.value
+image:image.value,
+category:category.value
 });
-alert("Producto agregado");
+}
+
+title.value="";
+price.value="";
+image.value="";
+alert("Guardado");
 };
 
-/* BORRAR */
-window.deleteProduct = async id=>{
-await deleteDoc(doc(db,"products",id));
+/* EDITAR */
+window.editProduct=id=>{
+const p=products.find(x=>x.id==id);
+title.value=p.title;
+price.value=p.price;
+image.value=p.image;
+category.value=p.category;
+editingId=id;
+showSection("addSection");
+};
+
+/* ELIMINAR */
+window.deleteProduct=id=>{
+deleteDoc(doc(db,"products",id));
+};
+
+/* BUSCAR */
+window.filterProducts=()=>{
+const q=search.value.toLowerCase();
+render(products.filter(p=>p.title.toLowerCase().includes(q)));
 };
 
 /* LOGIN */
-window.login = async ()=>{
-try{
-await signInWithEmailAndPassword(
-auth,
-email.value,
-password.value
-);
-alert("Login correcto");
-}catch(e){
-alert("Error login: "+e.message);
-}
+window.login=()=>{
+signInWithEmailAndPassword(auth,email.value,password.value)
+.catch(()=>alert("Error login"));
 };
 
-/* LOGOUT */
-window.logout = ()=>signOut(auth);
+window.logout=()=>signOut(auth);
 
-/* DETECTAR LOGIN */
 onAuthStateChanged(auth,user=>{
-admin = !!user;
+admin=!!user;
 
-loginBox.style.display = admin ? "none":"block";
-logoutBtn.style.display = admin ? "block":"none";
-adminPanel.style.display = admin ? "block":"none";
+loginBox.style.display=admin?"none":"block";
+logoutBtn.style.display=admin?"block":"none";
 });
 
 </script>
