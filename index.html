@@ -12,58 +12,67 @@
 
 <style>
 body { font-family: system-ui; background:#f8fafc }
-.modal { display:none }
-.modal.show { display:flex }
 </style>
 </head>
 
 <body class="text-slate-900">
 
+<!-- HEADER -->
 <header class="sticky top-0 bg-white border-b z-40">
   <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
     <h1 class="text-2xl font-black text-red-600">Kindo Mall</h1>
     <div class="flex gap-3">
-      <button id="uploadBtn" class="hidden bg-red-600 text-white px-4 py-2 rounded-xl font-bold" onclick="toggleModal('upload',true)">Subir</button>
-      <button onclick="toggleModal('login',true)" id="loginBtn" class="font-bold">Admin</button>
+      <button id="uploadBtn" class="hidden bg-red-600 text-white px-4 py-2 rounded-xl font-bold"
+        onclick="toggleModal('upload', true)">Subir</button>
+      <button onclick="toggleModal('login', true)" class="font-bold">Admin</button>
     </div>
   </div>
 </header>
 
+<!-- MAIN -->
 <main class="max-w-7xl mx-auto p-6">
-  <input id="search" oninput="render()" placeholder="Buscar..." class="w-full p-4 rounded-xl border mb-6">
+  <input id="search" oninput="render()" placeholder="Buscar..."
+    class="w-full p-4 rounded-xl border mb-6">
 
   <div id="products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
   <p id="empty" class="hidden text-center text-slate-400 mt-20">No hay productos</p>
 </main>
 
-<!-- LOGIN -->
-<div id="login" class="modal fixed inset-0 bg-black/60 items-center justify-center">
+<!-- LOGIN MODAL -->
+<div id="login" class="fixed inset-0 hidden bg-black/60 items-center justify-center z-50">
   <div class="bg-white p-8 rounded-2xl w-80">
-    <h2 class="font-black text-xl mb-4">Admin</h2>
+    <h2 class="font-black text-xl mb-4 text-center">Acceso Admin</h2>
     <input id="user" placeholder="Usuario" class="w-full p-3 border rounded mb-3">
     <input id="pass" type="password" placeholder="Contraseña" class="w-full p-3 border rounded mb-4">
-    <button onclick="login()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">Entrar</button>
+    <button onclick="login()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">
+      Entrar
+    </button>
   </div>
 </div>
 
-<!-- UPLOAD -->
-<div id="upload" class="modal fixed inset-0 bg-black/60 items-center justify-center">
+<!-- UPLOAD MODAL -->
+<div id="upload" class="fixed inset-0 hidden bg-black/60 items-center justify-center z-50">
   <div class="bg-white p-8 rounded-2xl w-full max-w-lg">
     <h2 class="font-black text-xl mb-4">Nuevo Producto</h2>
     <input id="title" placeholder="Nombre" class="w-full p-3 border rounded mb-3">
-    <input id="price" type="number" placeholder="Precio" class="w-full p-3 border rounded mb-3">
+    <input id="price" type="number" placeholder="Precio"
+      class="w-full p-3 border rounded mb-3">
     <select id="category" class="w-full p-3 border rounded mb-3">
       <option>Moda</option>
       <option>Electrónica</option>
       <option>Accesorios</option>
       <option>Hogar</option>
     </select>
-    <textarea id="desc" placeholder="Descripción" class="w-full p-3 border rounded mb-3"></textarea>
+    <textarea id="desc" placeholder="Descripción"
+      class="w-full p-3 border rounded mb-3"></textarea>
     <input id="images" type="file" multiple accept="image/*" class="mb-4">
-    <button onclick="upload()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">Publicar</button>
+    <button onclick="upload()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">
+      Publicar
+    </button>
   </div>
 </div>
 
+<!-- FIREBASE + APP -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -72,7 +81,7 @@ import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstati
 /* 🔥 PEGA AQUÍ TU CONFIG DE FIREBASE */
 const firebaseConfig = {
   apiKey: "TU_API_KEY",
-  authDomain: "TU_DOMINIO.firebaseapp.com",
+  authDomain: "TU_PROYECTO.firebaseapp.com",
   projectId: "TU_PROJECT_ID",
 };
 
@@ -85,58 +94,79 @@ await signInAnonymously(auth);
 let products = [];
 let admin = false;
 
-onSnapshot(collection(db,"products"), snap=>{
-  products = snap.docs.map(d=>({id:d.id,...d.data()}));
+/* LISTENER */
+onSnapshot(collection(db, "products"), snap => {
+  products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   render();
 });
 
-window.render = ()=>{
+/* RENDER */
+window.render = () => {
   const q = search.value.toLowerCase();
-  const list = products.filter(p=>p.title.toLowerCase().includes(q));
-  productsDiv.innerHTML = list.map(p=>`
+  const list = products.filter(p => p.title.toLowerCase().includes(q));
+
+  products.innerHTML = list.map(p => `
     <div class="bg-white rounded-2xl shadow p-4">
       <img src="${p.images[0]}" class="aspect-[4/5] object-cover rounded-xl mb-3">
       <h3 class="font-bold">${p.title}</h3>
       <p class="text-red-600 font-black">$${p.price}</p>
     </div>
   `).join("");
-  empty.classList.toggle("hidden",list.length);
+
+  empty.classList.toggle("hidden", list.length > 0);
 };
 
-window.login = ()=>{
-  if(user.value==="admin" && pass.value==="admin"){
-    admin=true;
+/* LOGIN */
+window.login = () => {
+  if (user.value === "admin" && pass.value === "admin") {
+    admin = true;
     uploadBtn.classList.remove("hidden");
-    toggleModal("login",false);
+    toggleModal("login", false);
+  } else {
+    alert("Credenciales incorrectas");
   }
 };
 
-window.upload = async ()=>{
-  const files=[...images.files];
-  const imgs=[];
-  for(const f of files){
-    imgs.push(await new Promise(r=>{
-      const fr=new FileReader();
-      fr.onload=e=>r(e.target.result);
+/* UPLOAD */
+window.upload = async () => {
+  if (!admin) return;
+
+  const files = [...images.files];
+  if (!files.length) return alert("Sube imágenes");
+
+  const imgs = [];
+  for (const f of files) {
+    imgs.push(await new Promise(res => {
+      const fr = new FileReader();
+      fr.onload = e => res(e.target.result);
       fr.readAsDataURL(f);
     }));
   }
-  await addDoc(collection(db,"products"),{
-    title:title.value,
-    price:Number(price.value),
-    category:category.value,
-    desc:desc.value,
-    images:imgs,
-    createdAt:Date.now()
+
+  await addDoc(collection(db, "products"), {
+    title: title.value,
+    price: Number(price.value),
+    category: category.value,
+    desc: desc.value,
+    images: imgs,
+    createdAt: Date.now()
   });
-  toggleModal("upload",false);
+
+  toggleModal("upload", false);
 };
 
-window.toggleModal=(id,show)=>{
-  document.getElementById(id).classList.toggle("show",show);
+/* MODAL */
+window.toggleModal = (id, show) => {
+  const m = document.getElementById(id);
+  if (!m) return;
+  if (show) {
+    m.classList.remove("hidden");
+    m.classList.add("flex");
+  } else {
+    m.classList.add("hidden");
+    m.classList.remove("flex");
+  }
 };
-
-lucide.createIcons();
 </script>
 
 </body>
