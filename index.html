@@ -63,7 +63,7 @@
     <!-- Header -->
     <header class="sticky top-0 z-40 w-full glass-effect border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <div class="flex items-center gap-3 cursor-pointer">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="location.reload()">
                 <div class="logo-k bg-red-600 w-11 h-11 rounded-2xl shadow-lg shadow-red-200 flex items-center justify-center border-2 border-white">
                     <span class="text-white text-2xl font-black italic">K</span>
                 </div>
@@ -82,8 +82,9 @@
                     <i data-lucide="plus-circle" class="w-5 h-5"></i>
                     <span class="hidden sm:inline">Subir Productos</span>
                 </button>
-                <button id="loginBtn" onclick="promptPassword()" class="text-slate-400 hover:text-slate-600 p-2">
-                    <i data-lucide="lock" class="w-5 h-5"></i>
+                <button id="loginBtn" onclick="toggleModal('loginModal', true)" class="flex items-center gap-2 text-slate-500 hover:text-red-600 font-bold text-sm transition-colors p-2">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                    <span id="loginBtnText">Acceso Admin</span>
                 </button>
             </div>
         </div>
@@ -108,6 +109,31 @@
             <h2 id="statusTitle" class="text-2xl font-bold text-slate-400">Cargando catálogo...</h2>
         </div>
     </main>
+
+    <!-- Modal Login -->
+    <div id="loginModal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-sm shadow-2xl p-10 relative">
+            <button onclick="toggleModal('loginModal', false)" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <div class="text-center mb-8">
+                <div class="bg-red-600 w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-white text-3xl font-black italic shadow-lg shadow-red-200">K</div>
+                <h2 class="text-2xl font-800 text-slate-800">Panel de Control</h2>
+                <p class="text-slate-500 text-sm mt-2">Ingresa tus credenciales admin</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Usuario</label>
+                    <input type="text" id="loginUser" required class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Contraseña</label>
+                    <input type="password" id="loginPass" required class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none transition-all">
+                </div>
+                <button type="submit" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-red-600 transition-all shadow-xl active:scale-95 mt-4">Entrar al Sistema</button>
+            </form>
+        </div>
+    </div>
 
     <!-- Modal Subir -->
     <div id="uploadModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
@@ -191,7 +217,6 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global environment variables
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -202,9 +227,8 @@
         let currentFilter = 'Todos';
         let isAdmin = false;
         let base64Images = [];
-        const ADMIN_PASSWORD = "1234";
 
-        // AUTH INITIALIZATION (MANDATORY RULE 3)
+        // Auth Init
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -217,32 +241,24 @@
             }
         };
 
-        // AUTH LISTENER
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Solo escuchamos productos después de estar autenticados
-                listenToProducts();
-            }
+            if (user) listenToProducts();
         });
 
-        // FIRESTORE LISTENER (RULE 1 & 2)
         function listenToProducts() {
-            // Path strict following RULE 1
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'products');
-            
             onSnapshot(colRef, (snapshot) => {
                 products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderProducts();
             }, (error) => {
-                console.error("Error Firestore:", error);
-                document.getElementById('statusTitle').innerText = "Error de conexión. Reintente.";
+                console.error("Firestore error:", error);
             });
         }
 
-        // RENDER LOGIC
         window.renderProducts = () => {
             const grid = document.getElementById('productGrid');
-            const search = document.getElementById('searchInput').value.toLowerCase();
+            const searchInput = document.getElementById('searchInput');
+            const search = searchInput ? searchInput.value.toLowerCase() : "";
             const empty = document.getElementById('emptyState');
             
             const filtered = products.filter(p => {
@@ -291,16 +307,21 @@
             }
         };
 
-        // UI ACTIONS
-        window.promptPassword = () => {
-            const pass = prompt("Acceso Administrativo:");
-            if (pass === ADMIN_PASSWORD) {
+        // Login Action
+        document.getElementById('loginForm').onsubmit = (e) => {
+            e.preventDefault();
+            const u = document.getElementById('loginUser').value;
+            const p = document.getElementById('loginPass').value;
+            
+            if(u === "admin" && p === "admin") {
                 isAdmin = true;
                 document.getElementById('adminIndicator').classList.remove('hidden');
                 document.getElementById('uploadBtn').classList.remove('hidden');
-                document.getElementById('loginBtn').innerHTML = '<i data-lucide="log-out" class="w-5 h-5"></i>';
+                document.getElementById('loginBtnText').innerText = "Cerrar Sesión";
+                toggleModal('loginModal', false);
                 renderProducts();
-                lucide.createIcons();
+            } else {
+                alert("Credenciales incorrectas");
             }
         };
 
@@ -335,6 +356,7 @@
                     });
                 }
                 toggleModal('uploadModal', false);
+                resetPhotos();
             } catch (e) {
                 console.error(e);
             } finally {
@@ -369,10 +391,13 @@
 
         window.resetPhotos = () => {
             document.getElementById('fileInput').value = "";
-            document.getElementById('previewGrid').innerHTML = '';
-            document.getElementById('previewGrid').classList.add('hidden');
-            document.getElementById('dropzoneContent').classList.remove('hidden');
-            document.getElementById('resetPhotosBtn').classList.add('hidden');
+            const grid = document.getElementById('previewGrid');
+            const content = document.getElementById('dropzoneContent');
+            const resetBtn = document.getElementById('resetPhotosBtn');
+            if(grid) grid.innerHTML = '';
+            if(grid) grid.classList.add('hidden');
+            if(content) content.classList.remove('hidden');
+            if(resetBtn) resetBtn.classList.add('hidden');
             base64Images = [];
         };
 
@@ -388,7 +413,7 @@
             container.innerHTML = categories.map(cat => `
                 <button onclick="setFilter('${cat}')" 
                     class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                    currentFilter === cat ? 'bg-red-600 text-white' : 'bg-white text-slate-500 border border-slate-200'
+                    currentFilter === cat ? 'bg-red-600 text-white' : 'bg-white text-slate-500 border border-slate-200 shadow-sm'
                 }">${cat}</button>
             `).join('');
         };
@@ -399,6 +424,7 @@
             else {
                 modal.classList.add('hidden');
                 if(id === 'uploadModal') document.getElementById('uploadForm').reset();
+                if(id === 'loginModal') document.getElementById('loginForm').reset();
             }
         };
 
@@ -409,7 +435,7 @@
             document.getElementById('detailTitle').innerText = p.title;
             document.getElementById('detailCat').innerText = p.category;
             document.getElementById('detailPrice').innerText = `$${p.price}`;
-            document.getElementById('detailDesc').innerText = p.desc || 'Producto exclusivo.';
+            document.getElementById('detailDesc').innerText = p.desc || 'Producto exclusivo de Kindo Mall.';
             toggleModal('detailModal', true);
         };
 
@@ -420,4 +446,4 @@
 
     </script>
 </body>
-</html>
+</html
