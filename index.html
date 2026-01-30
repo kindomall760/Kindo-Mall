@@ -2,152 +2,219 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kindo Mall</title>
 
 <style>
-body{font-family:Arial;background:#f2f2f2;margin:0}
-
-/* HEADER */
-header{background:#c40000;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center}
-.logo{display:flex;align-items:center;gap:10px}
-.logo-k{background:white;color:#c40000;font-weight:bold;font-size:26px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:8px}
-.admin-btn{background:white;color:#c40000;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
-
-/* PRODUCTOS */
-#products{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:15px;padding:20px}
-.product{background:white;border-radius:10px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.2)}
-.product img{width:100%;height:200px;object-fit:cover}
-.product h3{margin:10px}
-.price{margin:10px;color:green;font-weight:bold}
-
-/* PANEL ADMIN */
-#adminPanel{
-position:fixed;
-top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,0.6);
-display:none;
-align-items:center;
-justify-content:center;
+body{
+  font-family: Arial;
+  margin:0;
+  background:#f5f5f5;
 }
 
-.panel{
-background:white;
-padding:20px;
-border-radius:10px;
-width:300px;
+header{
+  background:#c40000;
+  color:white;
+  padding:15px;
+  text-align:center;
+  font-size:24px;
 }
 
-.panel input,.panel textarea{
-width:100%;
-margin-bottom:10px;
-padding:8px;
+#loginBox{
+  padding:15px;
+  background:white;
+  margin:10px;
 }
 
-.panel button{
-background:#c40000;
-color:white;
-border:none;
-padding:10px;
-width:100%;
-cursor:pointer;
+input,button{
+  padding:8px;
+  margin:4px;
 }
 
-/* REDES */
-.whatsapp-btn,.instagram-btn{
-position:fixed;right:15px;padding:12px 16px;color:white;border-radius:30px;text-decoration:none;font-weight:bold;
+button{
+  background:#c40000;
+  color:white;
+  border:none;
+  cursor:pointer;
 }
-.whatsapp-btn{bottom:20px;background:#25D366}
-.instagram-btn{bottom:70px;background:#E1306C}
 
-/* FOOTER */
-.footer{background:#111;color:white;text-align:center;padding:20px;margin-top:40px}
-.footer a{color:#4da6ff}
+.products{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:10px;
+  padding:10px;
+}
+
+.card{
+  background:white;
+  padding:10px;
+  border-radius:8px;
+}
+
+.card img{
+  width:100%;
+  height:150px;
+  object-fit:cover;
+}
+
+.adminBtn{
+  background:black;
+  margin-top:5px;
+}
+
+footer{
+  background:#222;
+  color:white;
+  text-align:center;
+  padding:15px;
+}
+a{color:white;}
 </style>
 </head>
 
 <body>
 
-<header>
-<div class="logo">
-<div class="logo-k">K</div>
-<h1>Kindo Mall</h1>
+<header>Kindo Mall</header>
+
+<!-- LOGIN -->
+<div id="loginBox">
+<h3>Panel Admin</h3>
+<input id="email" placeholder="Correo">
+<input id="password" type="password" placeholder="Contraseña">
+<button onclick="login()">Entrar</button>
 </div>
 
-<button class="admin-btn" onclick="openAdmin()">Admin</button>
-</header>
+<button id="logoutBtn" style="display:none;" onclick="logout()">Cerrar sesión</button>
 
-<div id="products">Cargando productos...</div>
+<!-- AGREGAR PRODUCTO -->
+<div id="adminPanel" style="display:none;padding:10px;">
+<h3>Agregar producto</h3>
 
-<footer class="footer">
-<p>📍 <a href="https://maps.app.goo.gl/gWtkL2p69zGwPBgF9" target="_blank">Ubicación</a></p>
-<p>Desarrollado por <strong>Cesar Dev</strong></p>
+<input id="title" placeholder="Nombre"><br>
+<input id="price" placeholder="Precio"><br>
+<input id="image" placeholder="URL imagen"><br>
+
+<button onclick="addProduct()">Guardar</button>
+</div>
+
+<!-- PRODUCTOS -->
+<div class="products" id="products"></div>
+
+<footer>
+Instagram:
+<a href="https://www.instagram.com/kindomall/" target="_blank">
+@kindomall
+</a>
+<br>
+WhatsApp:
+<a href="https://api.whatsapp.com/message/GHE4RKLD422VO1" target="_blank">
+Contactar
+</a>
+<br>
+Ubicación:
+<a href="https://maps.app.goo.gl/gWtkL2p69zGwPBgF9" target="_blank">
+Ver mapa
+</a>
+<br><br>
+Desarrollado por Cesar Dev
 </footer>
 
-<a href="https://api.whatsapp.com/message/GHE4RKLD422VO1?autoload=1&app_absent=0" target="_blank" class="whatsapp-btn">WhatsApp</a>
-<a href="https://www.instagram.com/kindomall/" target="_blank" class="instagram-btn">Instagram</a>
-
-<!-- PANEL ADMIN -->
-<div id="adminPanel">
-<div class="panel">
-<h3>Agregar Producto</h3>
-<input id="title" placeholder="Nombre">
-<input id="price" type="number" placeholder="Precio">
-<textarea id="desc" placeholder="Descripción"></textarea>
-<input id="image" placeholder="Nombre imagen (ej: zapato.jpg)">
-<button onclick="addProduct()">Guardar</button>
-<button onclick="closeAdmin()">Cerrar</button>
-</div>
-</div>
-
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore.js";
+import { initializeApp } from
+"https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+addDoc,
+onSnapshot,
+deleteDoc,
+doc
+} from
+"https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore.js";
+
+import {
+getAuth,
+signInWithEmailAndPassword,
+signOut,
+onAuthStateChanged
+} from
+"https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
 
 const firebaseConfig = {
-apiKey:"AIzaSyCQd2Aw91y8Kb0c9EoDJTd9FvdlsfRSDqI",
-authDomain:"kindo-mall.firebaseapp.com",
-projectId:"kindo-mall",
-storageBucket:"kindo-mall.appspot.com",
-messagingSenderId:"463969508011",
-appId:"1:463969508011:web:1ee78cb55a67dc0a27f5ee"
+apiKey: "AIzaSyCQd2Aw91y8Kb0c9EoDJTd9FvdlsfRSDqI",
+authDomain: "kindo-mall.firebaseapp.com",
+projectId: "kindo-mall",
+storageBucket: "kindo-mall.appspot.com",
+messagingSenderId: "463969508011",
+appId: "1:463969508011:web:1ee78cb55a67dc0a27f5ee"
 };
 
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-const container=document.getElementById("products");
+const container = document.getElementById("products");
+let admin = false;
 
-/* VER PRODUCTOS */
-onSnapshot(collection(db,"products"),snapshot=>{
-container.innerHTML="";
-snapshot.forEach(doc=>{
-const p=doc.data();
+function renderProducts(list){
+container.innerHTML = "";
 
-container.innerHTML+=`
-<div class="product">
-<img src="images/${p.image}">
+list.forEach(p=>{
+const div = document.createElement("div");
+div.className="card";
+
+div.innerHTML = `
+<img src="${p.image}">
 <h3>${p.title}</h3>
-<div class="price">$${p.price}</div>
-</div>`;
+<p>Precio: $${p.price}</p>
+${admin ? `<button class="adminBtn"
+onclick="deleteProduct('${p.id}')">
+Eliminar
+</button>` : ""}
+`;
+
+container.appendChild(div);
 });
+}
+
+onSnapshot(collection(db,"products"), snap=>{
+let arr=[];
+snap.forEach(d=>{
+arr.push({id:d.id,...d.data()});
+});
+renderProducts(arr);
 });
 
-/* PANEL ADMIN */
-window.openAdmin=()=>adminPanel.style.display="flex";
-window.closeAdmin=()=>adminPanel.style.display="none";
-
-/* AGREGAR PRODUCTO */
-window.addProduct=async()=>{
+window.addProduct = async ()=>{
 await addDoc(collection(db,"products"),{
 title:title.value,
-price:Number(price.value),
-description:desc.value,
+price:price.value,
 image:image.value
 });
-
-closeAdmin();
+alert("Producto agregado");
 };
+
+window.deleteProduct = async id=>{
+await deleteDoc(doc(db,"products",id));
+};
+
+window.login = async ()=>{
+await signInWithEmailAndPassword(
+auth,
+email.value,
+password.value
+);
+};
+
+window.logout = ()=>signOut(auth);
+
+onAuthStateChanged(auth,user=>{
+admin = !!user;
+
+loginBox.style.display = admin ? "none":"block";
+logoutBtn.style.display = admin ? "block":"none";
+adminPanel.style.display = admin ? "block":"none";
+});
 </script>
 
 </body>
