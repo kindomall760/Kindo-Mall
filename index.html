@@ -9,6 +9,7 @@
 
 <style>
 body { background:#f8fafc; font-family: system-ui }
+.modal-bg { background: rgba(0,0,0,.6); }
 </style>
 </head>
 
@@ -20,11 +21,9 @@ body { background:#f8fafc; font-family: system-ui }
     <h1 class="text-2xl font-black text-red-600">Kindo Mall</h1>
     <div class="flex gap-3">
       <button id="uploadBtn" class="hidden bg-red-600 text-white px-4 py-2 rounded-xl font-bold"
-        onclick="toggleModal('upload', true)">Subir</button>
+        onclick="openUpload()">Subir</button>
 
-      <button class="font-bold" onclick="toggleModal('login', true)">
-        Admin
-      </button>
+      <button class="font-bold" onclick="openLogin()">Admin</button>
     </div>
   </div>
 </header>
@@ -40,85 +39,115 @@ body { background:#f8fafc; font-family: system-ui }
 </main>
 
 <!-- LOGIN MODAL -->
-<div id="login" class="fixed inset-0 hidden bg-black/60 flex items-center justify-center z-50">
+<div id="loginModal" class="fixed inset-0 hidden modal-bg flex items-center justify-center z-50">
   <div class="bg-white p-8 rounded-2xl w-80">
     <h2 class="font-black text-xl mb-4 text-center">Acceso Admin</h2>
-    <input id="user" placeholder="Usuario" class="w-full p-3 border rounded mb-3">
-    <input id="pass" type="password" placeholder="Contraseña" class="w-full p-3 border rounded mb-4">
-    <button onclick="loginAdmin()"
-      class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">
+    <input id="loginUser" placeholder="Usuario" class="w-full p-3 border rounded mb-3">
+    <input id="loginPass" type="password" placeholder="Contraseña" class="w-full p-3 border rounded mb-4">
+    <button onclick="loginAdmin()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">
       Entrar
     </button>
   </div>
 </div>
 
 <!-- UPLOAD MODAL -->
-<div id="upload" class="fixed inset-0 hidden bg-black/60 flex items-center justify-center z-50">
+<div id="uploadModal" class="fixed inset-0 hidden modal-bg flex items-center justify-center z-50">
   <div class="bg-white p-8 rounded-2xl w-full max-w-lg">
     <h2 class="font-black text-xl mb-4">Nuevo Producto</h2>
     <input id="title" placeholder="Nombre" class="w-full p-3 border rounded mb-3">
     <input id="price" type="number" placeholder="Precio" class="w-full p-3 border rounded mb-3">
+    <textarea id="desc" placeholder="Descripción" class="w-full p-3 border rounded mb-3"></textarea>
     <input id="images" type="file" multiple accept="image/*" class="mb-4">
-    <button onclick="uploadProduct()"
-      class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">
+    <button onclick="addProduct()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">
       Publicar
     </button>
   </div>
 </div>
 
-<!-- APP -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-/* 🔥 TU CONFIG */
-const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_PROYECTO.firebaseapp.com",
-  projectId: "TU_PROJECT_ID",
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-await signInAnonymously(auth);
-
-let products = [];
+<script>
+/* =====================
+   ESTADO
+===================== */
+let products = JSON.parse(localStorage.getItem("products") || "[]");
 let isAdmin = false;
 
-/* FIRESTORE */
-onSnapshot(collection(db, "products"), snap => {
-  products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  window.renderProducts();
-});
+/* =====================
+   MODALES
+===================== */
+function openLogin() {
+  document.getElementById("loginModal").classList.remove("hidden");
+}
 
-/* 🔑 EXPONER FUNCIONES (CLAVE) */
-window.toggleModal = (id, show) => {
-  const m = document.getElementById(id);
-  if (show) {
-    m.classList.remove("hidden");
-  } else {
-    m.classList.add("hidden");
-  }
-};
+function openUpload() {
+  document.getElementById("uploadModal").classList.remove("hidden");
+}
 
-window.loginAdmin = () => {
-  if (user.value === "admin" && pass.value === "admin") {
+function closeModals() {
+  document.getElementById("loginModal").classList.add("hidden");
+  document.getElementById("uploadModal").classList.add("hidden");
+}
+
+/* =====================
+   LOGIN
+===================== */
+function loginAdmin() {
+  const u = document.getElementById("loginUser").value;
+  const p = document.getElementById("loginPass").value;
+
+  if (u === "admin" && p === "admin") {
     isAdmin = true;
-    uploadBtn.classList.remove("hidden");
-    toggleModal("login", false);
+    document.getElementById("uploadBtn").classList.remove("hidden");
+    closeModals();
   } else {
     alert("Credenciales incorrectas");
   }
-};
+}
 
-window.renderProducts = () => {
+/* =====================
+   PRODUCTOS
+===================== */
+function addProduct() {
+  if (!isAdmin) return;
+
+  const files = document.getElementById("images").files;
+  if (!files.length) return alert("Sube al menos una imagen");
+
+  const imgs = [];
+  let loaded = 0;
+
+  for (const f of files) {
+    const r = new FileReader();
+    r.onload = e => {
+      imgs.push(e.target.result);
+      loaded++;
+      if (loaded === files.length) saveProduct(imgs);
+    };
+    r.readAsDataURL(f);
+  }
+}
+
+function saveProduct(imgs) {
+  products.push({
+    title: title.value,
+    price: Number(price.value),
+    desc: desc.value,
+    images: imgs
+  });
+
+  localStorage.setItem("products", JSON.stringify(products));
+  closeModals();
+  renderProducts();
+}
+
+/* =====================
+   RENDER
+===================== */
+function renderProducts() {
   const q = search.value.toLowerCase();
   const list = products.filter(p => p.title.toLowerCase().includes(q));
 
-  productsDiv.innerHTML = list.map(p => `
+  const grid = document.getElementById("products");
+  grid.innerHTML = list.map(p => `
     <div class="bg-white rounded-2xl shadow p-4">
       <img src="${p.images[0]}" class="aspect-[4/5] object-cover rounded-xl mb-3">
       <h3 class="font-bold">${p.title}</h3>
@@ -126,30 +155,10 @@ window.renderProducts = () => {
     </div>
   `).join("");
 
-  empty.classList.toggle("hidden", list.length > 0);
-};
+  document.getElementById("empty").classList.toggle("hidden", list.length > 0);
+}
 
-window.uploadProduct = async () => {
-  if (!isAdmin) return;
-
-  const imgs = [];
-  for (const f of images.files) {
-    imgs.push(await new Promise(res => {
-      const r = new FileReader();
-      r.onload = e => res(e.target.result);
-      r.readAsDataURL(f);
-    }));
-  }
-
-  await addDoc(collection(db, "products"), {
-    title: title.value,
-    price: Number(price.value),
-    images: imgs,
-    createdAt: Date.now()
-  });
-
-  toggleModal("upload", false);
-};
+renderProducts();
 </script>
 
 </body>
