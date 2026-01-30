@@ -5,13 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kindo Mall</title>
 
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23ef4444%22/><text x=%2220%22 y=%2275%22 font-size=%2270%22 font-weight=%22bold%22 fill=%22white%22>K</text></svg>">
-
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
-body { font-family: system-ui; background:#f8fafc }
+body { background:#f8fafc; font-family: system-ui }
 </style>
 </head>
 
@@ -24,61 +21,58 @@ body { font-family: system-ui; background:#f8fafc }
     <div class="flex gap-3">
       <button id="uploadBtn" class="hidden bg-red-600 text-white px-4 py-2 rounded-xl font-bold"
         onclick="toggleModal('upload', true)">Subir</button>
-      <button onclick="toggleModal('login', true)" class="font-bold">Admin</button>
+
+      <button class="font-bold" onclick="toggleModal('login', true)">
+        Admin
+      </button>
     </div>
   </div>
 </header>
 
 <!-- MAIN -->
 <main class="max-w-7xl mx-auto p-6">
-  <input id="search" oninput="render()" placeholder="Buscar..."
-    class="w-full p-4 rounded-xl border mb-6">
+  <input id="search" placeholder="Buscar..."
+    class="w-full p-4 rounded-xl border mb-6"
+    oninput="renderProducts()">
 
   <div id="products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
   <p id="empty" class="hidden text-center text-slate-400 mt-20">No hay productos</p>
 </main>
 
 <!-- LOGIN MODAL -->
-<div id="login" class="fixed inset-0 hidden bg-black/60 items-center justify-center z-50">
+<div id="login" class="fixed inset-0 hidden bg-black/60 flex items-center justify-center z-50">
   <div class="bg-white p-8 rounded-2xl w-80">
     <h2 class="font-black text-xl mb-4 text-center">Acceso Admin</h2>
     <input id="user" placeholder="Usuario" class="w-full p-3 border rounded mb-3">
     <input id="pass" type="password" placeholder="Contraseña" class="w-full p-3 border rounded mb-4">
-    <button onclick="login()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">
+    <button onclick="loginAdmin()"
+      class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">
       Entrar
     </button>
   </div>
 </div>
 
 <!-- UPLOAD MODAL -->
-<div id="upload" class="fixed inset-0 hidden bg-black/60 items-center justify-center z-50">
+<div id="upload" class="fixed inset-0 hidden bg-black/60 flex items-center justify-center z-50">
   <div class="bg-white p-8 rounded-2xl w-full max-w-lg">
     <h2 class="font-black text-xl mb-4">Nuevo Producto</h2>
     <input id="title" placeholder="Nombre" class="w-full p-3 border rounded mb-3">
-    <input id="price" type="number" placeholder="Precio"
-      class="w-full p-3 border rounded mb-3">
-    <select id="category" class="w-full p-3 border rounded mb-3">
-      <option>Moda</option>
-      <option>Electrónica</option>
-      <option>Accesorios</option>
-      <option>Hogar</option>
-    </select>
-    <textarea id="desc" placeholder="Descripción"
-      class="w-full p-3 border rounded mb-3"></textarea>
+    <input id="price" type="number" placeholder="Precio" class="w-full p-3 border rounded mb-3">
     <input id="images" type="file" multiple accept="image/*" class="mb-4">
-    <button onclick="upload()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">
+    <button onclick="uploadProduct()"
+      class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">
       Publicar
     </button>
   </div>
 </div>
 
-<!-- FIREBASE + APP -->
+<!-- APP -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-/* 🔥 PEGA AQUÍ TU CONFIG DE FIREBASE */
+/* 🔥 TU CONFIG */
 const firebaseConfig = {
   apiKey: "TU_API_KEY",
   authDomain: "TU_PROYECTO.firebaseapp.com",
@@ -92,20 +86,39 @@ const db = getFirestore(app);
 await signInAnonymously(auth);
 
 let products = [];
-let admin = false;
+let isAdmin = false;
 
-/* LISTENER */
+/* FIRESTORE */
 onSnapshot(collection(db, "products"), snap => {
   products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  render();
+  window.renderProducts();
 });
 
-/* RENDER */
-window.render = () => {
+/* 🔑 EXPONER FUNCIONES (CLAVE) */
+window.toggleModal = (id, show) => {
+  const m = document.getElementById(id);
+  if (show) {
+    m.classList.remove("hidden");
+  } else {
+    m.classList.add("hidden");
+  }
+};
+
+window.loginAdmin = () => {
+  if (user.value === "admin" && pass.value === "admin") {
+    isAdmin = true;
+    uploadBtn.classList.remove("hidden");
+    toggleModal("login", false);
+  } else {
+    alert("Credenciales incorrectas");
+  }
+};
+
+window.renderProducts = () => {
   const q = search.value.toLowerCase();
   const list = products.filter(p => p.title.toLowerCase().includes(q));
 
-  products.innerHTML = list.map(p => `
+  productsDiv.innerHTML = list.map(p => `
     <div class="bg-white rounded-2xl shadow p-4">
       <img src="${p.images[0]}" class="aspect-[4/5] object-cover rounded-xl mb-3">
       <h3 class="font-bold">${p.title}</h3>
@@ -116,56 +129,26 @@ window.render = () => {
   empty.classList.toggle("hidden", list.length > 0);
 };
 
-/* LOGIN */
-window.login = () => {
-  if (user.value === "admin" && pass.value === "admin") {
-    admin = true;
-    uploadBtn.classList.remove("hidden");
-    toggleModal("login", false);
-  } else {
-    alert("Credenciales incorrectas");
-  }
-};
-
-/* UPLOAD */
-window.upload = async () => {
-  if (!admin) return;
-
-  const files = [...images.files];
-  if (!files.length) return alert("Sube imágenes");
+window.uploadProduct = async () => {
+  if (!isAdmin) return;
 
   const imgs = [];
-  for (const f of files) {
+  for (const f of images.files) {
     imgs.push(await new Promise(res => {
-      const fr = new FileReader();
-      fr.onload = e => res(e.target.result);
-      fr.readAsDataURL(f);
+      const r = new FileReader();
+      r.onload = e => res(e.target.result);
+      r.readAsDataURL(f);
     }));
   }
 
   await addDoc(collection(db, "products"), {
     title: title.value,
     price: Number(price.value),
-    category: category.value,
-    desc: desc.value,
     images: imgs,
     createdAt: Date.now()
   });
 
   toggleModal("upload", false);
-};
-
-/* MODAL */
-window.toggleModal = (id, show) => {
-  const m = document.getElementById(id);
-  if (!m) return;
-  if (show) {
-    m.classList.remove("hidden");
-    m.classList.add("flex");
-  } else {
-    m.classList.add("hidden");
-    m.classList.remove("flex");
-  }
 };
 </script>
 
