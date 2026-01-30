@@ -2,73 +2,42 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kindo Mall</title>
 
 <style>
 *{box-sizing:border-box}
-body{
-margin:0;
-font-family:Arial, Helvetica, sans-serif;
-background:#eaeded;
-}
+body{margin:0;font-family:Arial;background:#eaeded}
 
 /* HEADER */
 header{
 background:#131921;
 color:white;
-padding:15px 20px;
+padding:10px;
 display:flex;
 justify-content:space-between;
 align-items:center;
-position:sticky;
-top:0;
-z-index:10;
+flex-wrap:wrap;
 }
 
-.logo{
-font-size:22px;
-font-weight:bold;
-}
+.logo{font-size:22px;font-weight:bold}
 
 .searchBox input{
-width:260px;
 padding:10px;
 border:none;
 border-radius:6px;
+width:300px;
 }
-
-.adminAccess{
-background:#ff9900;
-padding:8px 14px;
-border:none;
-border-radius:6px;
-cursor:pointer;
-}
-
-/* BANNER */
-.banner{
-background:linear-gradient(120deg,#c40000,#ff9900);
-color:white;
-padding:40px 20px;
-text-align:center;
-}
-
-.banner h1{margin:0}
-.banner p{margin:10px 0 0}
 
 /* LAYOUT */
-.layout{
-display:flex;
-}
+.layout{display:flex}
 
-/* SIDEBAR ADMIN */
 .sidebar{
 width:220px;
 background:#232f3e;
 color:white;
 min-height:100vh;
 padding:15px;
-display:none;
 }
 
 .sidebar button{
@@ -82,42 +51,24 @@ cursor:pointer;
 border-radius:6px;
 }
 
-.sidebar button:hover{
-background:#485769;
-}
+.sidebar button:hover{background:#485769}
 
-/* CONTENT */
-.content{
-flex:1;
-padding:20px;
-}
+.content{flex:1;padding:20px}
 
-/* SECTION TITLE */
-.section-title{
-font-size:20px;
-margin-bottom:10px;
-}
-
-/* PRODUCTS GRID */
+/* PRODUCTOS */
 .products{
 display:grid;
-grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
 gap:18px;
 }
 
-/* CARD */
 .card{
 background:white;
 border-radius:10px;
 padding:12px;
 box-shadow:0 2px 6px rgba(0,0,0,.15);
-transition:.25s;
 display:flex;
 flex-direction:column;
-}
-
-.card:hover{
-transform:translateY(-5px);
 }
 
 .card img{
@@ -127,18 +78,14 @@ object-fit:contain;
 background:white;
 border-radius:8px;
 padding:5px;
-transition:.3s;
 }
 
 .card:hover img{
 transform:scale(1.05);
+transition:.3s;
 }
 
-.price{
-font-size:18px;
-font-weight:bold;
-margin:6px 0;
-}
+.price{font-weight:bold;margin:6px 0}
 
 .buyBtn{
 background:#ffd814;
@@ -146,61 +93,9 @@ border:none;
 padding:10px;
 border-radius:8px;
 cursor:pointer;
-margin-top:auto;
 }
 
-.buyBtn:hover{
-background:#f7ca00;
-}
-
-.adminBtn{
-background:#232f3e;
-color:white;
-padding:8px;
-border:none;
-margin-top:6px;
-border-radius:6px;
-cursor:pointer;
-}
-
-/* FORM */
-input,select{
-width:100%;
-padding:10px;
-margin-bottom:8px;
-border-radius:6px;
-border:1px solid #ccc;
-}
-
-.saveBtn{
-background:#ff9900;
-padding:12px;
-border:none;
-border-radius:6px;
-cursor:pointer;
-width:100%;
-}
-
-/* LOGIN MODAL */
-.modal{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.6);
-display:none;
-justify-content:center;
-align-items:center;
-z-index:20;
-}
-
-.modalContent{
-background:white;
-padding:20px;
-border-radius:10px;
-width:300px;
-}
+.buyBtn:hover{background:#f7ca00}
 
 /* FOOTER */
 footer{
@@ -208,13 +103,71 @@ background:#131921;
 color:white;
 text-align:center;
 padding:20px;
-margin-top:40px;
+margin-top:20px;
 }
 
-/* MOBILE */
+/* BOTON WHATSAPP */
+.whatsapp{
+position:fixed;
+bottom:20px;
+right:20px;
+background:#25D366;
+color:white;
+font-size:24px;
+padding:15px;
+border-radius:50%;
+text-decoration:none;
+}
+
+/* MENU MOVIL */
+.mobileMenu{
+display:none;
+position:fixed;
+bottom:0;
+width:100%;
+background:#131921;
+color:white;
+justify-content:space-around;
+padding:10px;
+}
+
+/* TABLET */
+@media(max-width:1000px){
+.products{grid-template-columns:repeat(3,1fr)}
+}
+
+/* MOVIL */
 @media(max-width:800px){
-.sidebar{display:none!important}
-.searchBox input{width:150px}
+
+header{
+flex-direction:column;
+text-align:center;
+gap:8px;
+}
+
+.searchBox input{width:100%}
+
+.layout{flex-direction:column}
+
+.sidebar{display:none}
+
+.content{padding:10px}
+
+.products{
+grid-template-columns:repeat(2,1fr);
+gap:10px;
+}
+
+.card img{height:150px}
+
+.mobileMenu{display:flex}
+
+body{padding-bottom:60px}
+}
+
+/* TELEFONO PEQUEÑO */
+@media(max-width:450px){
+.products{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -228,217 +181,88 @@ margin-top:40px;
 <input id="search" placeholder="Buscar productos..." onkeyup="filterProducts()">
 </div>
 
-<button class="adminAccess" onclick="openLogin()">Admin</button>
+<button onclick="openCart()">🛒 <span id="cartCount">0</span></button>
 </header>
-
-<div class="banner">
-<h1>Bienvenido a Kindo Mall</h1>
-<p>Ofertas exclusivas · Productos seleccionados · Compra fácil por WhatsApp</p>
-</div>
 
 <div class="layout">
 
-<!-- SIDEBAR ADMIN -->
-<div class="sidebar" id="sidebar">
-<button onclick="showSection('productsSection')">Productos</button>
-<button onclick="showSection('addSection')">Agregar / Editar</button>
-<button onclick="logout()">Cerrar sesión</button>
+<div class="sidebar">
+<button onclick="showProducts()">Productos</button>
 </div>
 
-<!-- CONTENT -->
 <div class="content">
-
-<!-- PRODUCTOS -->
-<div id="productsSection">
-<div class="section-title">Productos destacados</div>
 <div class="products" id="products"></div>
 </div>
 
-<!-- ADMIN FORM -->
-<div id="addSection" style="display:none;">
-<h3>Agregar / Editar Producto</h3>
-
-<input id="title" placeholder="Nombre">
-<input id="price" placeholder="Precio">
-<input id="image" placeholder="URL imagen">
-
-<select id="category">
-<option>General</option>
-<option>Ropa</option>
-<option>Electrónica</option>
-<option>Accesorios</option>
-</select>
-
-<button class="saveBtn" onclick="saveProduct()">Guardar producto</button>
 </div>
 
-</div>
+<!-- MENU MOVIL -->
+<div class="mobileMenu">
+<button onclick="showProducts()">🏠</button>
+<button onclick="openCart()">🛒</button>
+<a href="https://api.whatsapp.com/message/GHE4RKLD422VO1?autoload=1&app_absent=0" style="color:white;text-decoration:none;">💬</a>
 </div>
 
-<!-- LOGIN MODAL -->
-<div class="modal" id="loginModal">
-<div class="modalContent">
-<h3>Acceso administrador</h3>
-<input id="email" placeholder="Correo">
-<input id="password" type="password" placeholder="Contraseña">
-<button class="saveBtn" onclick="login()">Entrar</button>
-</div>
-</div>
+<!-- BOTON WHATSAPP -->
+<a class="whatsapp"
+href="https://api.whatsapp.com/message/GHE4RKLD422VO1?autoload=1&app_absent=0"
+target="_blank">💬</a>
 
 <footer>
-Instagram @kindomall · WhatsApp · Ubicación  
-<br>
-Desarrollado por Cesar Dev
+Instagram @kindomall • Ubicación disponible • Desarrollado por Cesar Dev
 </footer>
 
-<script type="module">
+<script>
+let products=[
+{id:1,title:"Producto prueba",price:10,image:"https://via.placeholder.com/300"}
+];
 
-import { initializeApp } from
-"https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
+let cart=[];
 
-import {
-getFirestore, collection, addDoc,
-onSnapshot, deleteDoc, doc, updateDoc
-} from
-"https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore.js";
+function showProducts(){
+renderProducts(products);
+}
 
-import {
-getAuth,
-signInWithEmailAndPassword,
-signOut,
-onAuthStateChanged
-} from
-"https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js";
+function filterProducts(){
+let q=search.value.toLowerCase();
+renderProducts(products.filter(p=>p.title.toLowerCase().includes(q)));
+}
 
-/* FIREBASE CONFIG */
-const firebaseConfig={
-apiKey:"AIzaSyCQd2Aw91y8Kb0c9EoDJTd9FvdlsfRSDqI",
-authDomain:"kindo-mall.firebaseapp.com",
-projectId:"kindo-mall",
-storageBucket:"kindo-mall.appspot.com",
-messagingSenderId:"463969508011",
-appId:"1:463969508011:web:1ee78cb55a67dc0a27f5ee"
-};
-
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
-const auth=getAuth(app);
-
-let products=[];
-let editingId=null;
-let admin=false;
-
-const container=document.getElementById("products");
-
-/* LOGIN MODAL */
-window.openLogin=()=>loginModal.style.display="flex";
-
-/* RENDER */
-function render(list){
-container.innerHTML="";
-list.forEach(p=>{
-const div=document.createElement("div");
-div.className="card";
-
-div.innerHTML=`
+function renderProducts(list){
+products.innerHTML=list.map(p=>`
+<div class="card">
 <img src="${p.image}">
-<h3>${p.title}</h3>
+<b>${p.title}</b>
 <div class="price">$${p.price}</div>
-
-<button class="buyBtn"
-onclick="window.open('https://api.whatsapp.com/send?text=Hola quiero comprar ${p.title}')">
-Comprar por WhatsApp
+<button class="buyBtn" onclick="addToCart('${p.id}')">
+Agregar al carrito
 </button>
-
-${admin?`
-<button class="adminBtn" onclick="editProduct('${p.id}')">Editar</button>
-<button class="adminBtn" onclick="deleteProduct('${p.id}')">Eliminar</button>
-`:""}
-`;
-
-container.appendChild(div);
-});
+</div>
+`).join("");
 }
 
-/* REALTIME */
-onSnapshot(collection(db,"products"),snap=>{
-products=[];
-snap.forEach(d=>{
-products.push({id:d.id,...d.data()});
-});
-render(products);
-});
-
-/* GUARDAR */
-window.saveProduct=async()=>{
-const img=image.value
-.replace("imgur.com/","i.imgur.com/")
-.endsWith(".jpg")||image.value.endsWith(".png")
-? image.value
-: image.value+".jpg";
-
-if(editingId){
-await updateDoc(doc(db,"products",editingId),{
-title:title.value,
-price:price.value,
-image:img,
-category:category.value
-});
-editingId=null;
-}else{
-await addDoc(collection(db,"products"),{
-title:title.value,
-price:price.value,
-image:img,
-category:category.value
-});
+function addToCart(id){
+let p=products.find(x=>x.id==id);
+cart.push(p);
+cartCount.textContent=cart.length;
+alert("Producto agregado");
 }
-alert("Producto guardado");
-};
 
-/* EDITAR */
-window.editProduct=id=>{
-const p=products.find(x=>x.id==id);
-title.value=p.title;
-price.value=p.price;
-image.value=p.image;
-category.value=p.category;
-editingId=id;
-showSection("addSection");
-};
+function openCart(){
+if(cart.length==0){
+alert("Carrito vacío");
+return;
+}
 
-/* BORRAR */
-window.deleteProduct=id=>{
-deleteDoc(doc(db,"products",id));
-};
-
-/* BUSCAR */
-window.filterProducts=()=>{
-const q=search.value.toLowerCase();
-render(products.filter(p=>p.title.toLowerCase().includes(q)));
-};
-
-/* LOGIN */
-window.login=()=>{
-signInWithEmailAndPassword(auth,email.value,password.value)
-.then(()=>loginModal.style.display="none")
-.catch(()=>alert("Error de acceso"));
-};
-
-window.logout=()=>signOut(auth);
-
-onAuthStateChanged(auth,user=>{
-admin=!!user;
-sidebar.style.display=admin?"block":"none";
+let text="Hola quiero comprar:%0A";
+cart.forEach(p=>{
+text+=`• ${p.title} - $${p.price}%0A`;
 });
 
-/* SECTIONS */
-window.showSection=id=>{
-productsSection.style.display="none";
-addSection.style.display="none";
-document.getElementById(id).style.display="block";
-};
+window.open("https://api.whatsapp.com/send?text="+text);
+}
 
+renderProducts(products);
 </script>
 
 </body>
