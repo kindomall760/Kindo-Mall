@@ -1,449 +1,143 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kindo Mall | Catálogo Digital</title>
-    
-    <!-- Favicon: Letra K en Rojo -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23ef4444%22/><text y=%22.9em%22 x=%22.15em%22 font-size=%2270%22 font-weight=%22bold%22 fill=%22white%22 font-family=%22Arial%22>K</text></svg>">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kindo Mall</title>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-        
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f8fafc;
-        }
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23ef4444%22/><text x=%2220%22 y=%2275%22 font-size=%2270%22 font-weight=%22bold%22 fill=%22white%22>K</text></svg>">
 
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-        }
-
-        .product-card:hover .action-buttons {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        #previewGrid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            width: 100%;
-            max-height: 280px;
-            overflow-y: auto;
-            padding: 4px;
-        }
-        
-        .logo-k { transition: transform 0.3s ease; }
-        .logo-k:hover { transform: rotate(-5deg) scale(1.05); }
-
-        .admin-badge {
-            background: #ef4444;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 10px;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-    </style>
+<style>
+body { font-family: system-ui; background:#f8fafc }
+.modal { display:none }
+.modal.show { display:flex }
+</style>
 </head>
+
 <body class="text-slate-900">
 
-    <!-- Header -->
-    <header class="sticky top-0 z-40 w-full glass-effect border-b border-slate-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="location.reload()">
-                <div class="logo-k bg-red-600 w-11 h-11 rounded-2xl shadow-lg shadow-red-200 flex items-center justify-center border-2 border-white">
-                    <span class="text-white text-2xl font-black italic">K</span>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="text-2xl font-extrabold tracking-tight text-slate-800">Kindo Mall</h1>
-                        <span id="adminIndicator" class="hidden admin-badge">Admin</span>
-                    </div>
-                    <p class="text-[10px] uppercase tracking-widest font-bold text-red-500 leading-none">Exclusividad Digital</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <button id="uploadBtn" onclick="toggleModal('uploadModal', true)" 
-                    class="hidden flex items-center gap-2 bg-slate-900 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl transition-all shadow-xl active:scale-95 font-semibold text-sm">
-                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
-                    <span class="hidden sm:inline">Subir Productos</span>
-                </button>
-                <button id="loginBtn" onclick="toggleModal('loginModal', true)" class="flex items-center gap-2 text-slate-500 hover:text-red-600 font-bold text-sm transition-colors p-2">
-                    <i data-lucide="user" class="w-5 h-5"></i>
-                    <span id="loginBtnText">Acceso Admin</span>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div class="flex flex-col lg:flex-row gap-6 mb-12 items-center justify-between">
-            <div class="relative w-full lg:max-w-md">
-                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
-                <input type="text" id="searchInput" oninput="renderProducts()" placeholder="¿Qué buscas en Kindo Mall?"
-                    class="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-red-500/10 focus:border-red-500 outline-none transition-all shadow-sm text-sm">
-            </div>
-            <div class="flex gap-2 overflow-x-auto w-full lg:w-auto pb-4 lg:pb-0 scrollbar-hide" id="categoryContainer"></div>
-        </div>
-
-        <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
-
-        <div id="emptyState" class="hidden text-center py-24">
-            <div id="statusIcon" class="bg-slate-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i data-lucide="image-off" class="w-10 h-10 text-slate-300"></i>
-            </div>
-            <h2 id="statusTitle" class="text-2xl font-bold text-slate-400">Cargando catálogo...</h2>
-        </div>
-    </main>
-
-    <!-- Modal Login -->
-    <div id="loginModal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-        <div class="bg-white rounded-[2.5rem] w-full max-w-sm shadow-2xl p-10 relative">
-            <button onclick="toggleModal('loginModal', false)" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-            <div class="text-center mb-8">
-                <div class="bg-red-600 w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-white text-3xl font-black italic shadow-lg shadow-red-200">K</div>
-                <h2 class="text-2xl font-800 text-slate-800">Panel de Control</h2>
-                <p class="text-slate-500 text-sm mt-2">Ingresa tus credenciales admin</p>
-            </div>
-            <form id="loginForm" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Usuario</label>
-                    <input type="text" id="loginUser" required class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none transition-all">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Contraseña</label>
-                    <input type="password" id="loginPass" required class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none transition-all">
-                </div>
-                <button type="submit" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-red-600 transition-all shadow-xl active:scale-95 mt-4">Entrar al Sistema</button>
-            </form>
-        </div>
+<header class="sticky top-0 bg-white border-b z-40">
+  <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+    <h1 class="text-2xl font-black text-red-600">Kindo Mall</h1>
+    <div class="flex gap-3">
+      <button id="uploadBtn" class="hidden bg-red-600 text-white px-4 py-2 rounded-xl font-bold" onclick="toggleModal('upload',true)">Subir</button>
+      <button onclick="toggleModal('login',true)" id="loginBtn" class="font-bold">Admin</button>
     </div>
+  </div>
+</header>
 
-    <!-- Modal Subir -->
-    <div id="uploadModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-        <div class="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
-            <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <div class="flex items-center gap-2">
-                    <span class="bg-red-600 text-white w-6 h-6 rounded flex items-center justify-center text-xs font-bold">K</span>
-                    <h2 class="text-xl font-800 text-slate-800">Publicar en Kindo</h2>
-                </div>
-                <button onclick="toggleModal('uploadModal', false)" class="text-slate-400 hover:text-slate-600 p-2">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
-            </div>
-            <form id="uploadForm" class="p-8 overflow-y-auto">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="space-y-5">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Nombre</label>
-                            <input id="formTitle" required type="text" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Categoría</label>
-                                <select id="formCategory" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
-                                    <option>Moda</option><option>Electrónica</option><option>Accesorios</option><option>Hogar</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Precio ($)</label>
-                                <input id="formPrice" required type="number" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
-                            </div>
-                        </div>
-                        <textarea id="formDesc" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none h-24 resize-none" placeholder="Descripción..."></textarea>
-                    </div>
-                    <div class="flex flex-col">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Fotos</label>
-                        <div id="dropzone" onclick="document.getElementById('fileInput').click()" 
-                            class="flex-grow min-h-[200px] border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center p-6 hover:border-red-400 hover:bg-red-50/30 transition-all cursor-pointer group">
-                            <input id="fileInput" type="file" multiple accept="image/*" class="hidden" onchange="previewImages(this)">
-                            <div id="previewGrid" class="hidden"></div>
-                            <div id="dropzoneContent" class="text-center">
-                                <i data-lucide="image-plus" class="w-12 h-12 text-slate-300 mx-auto mb-3 group-hover:text-red-500"></i>
-                                <p class="text-xs font-medium text-slate-500">Subir fotos</p>
-                            </div>
-                        </div>
-                        <button type="button" onclick="resetPhotos()" id="resetPhotosBtn" class="hidden mt-2 text-xs text-red-500 font-bold hover:underline">Limpiar</button>
-                    </div>
-                </div>
-                <div class="mt-10 flex gap-4">
-                    <button type="button" onclick="toggleModal('uploadModal', false)" class="flex-1 py-4 font-bold text-slate-500">Cerrar</button>
-                    <button type="submit" id="submitBtn" class="flex-[2] py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 shadow-xl transition-all">Publicar Producto</button>
-                </div>
-            </form>
-        </div>
+<main class="max-w-7xl mx-auto p-6">
+  <input id="search" oninput="render()" placeholder="Buscar..." class="w-full p-4 rounded-xl border mb-6">
+
+  <div id="products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+  <p id="empty" class="hidden text-center text-slate-400 mt-20">No hay productos</p>
+</main>
+
+<!-- LOGIN -->
+<div id="login" class="modal fixed inset-0 bg-black/60 items-center justify-center">
+  <div class="bg-white p-8 rounded-2xl w-80">
+    <h2 class="font-black text-xl mb-4">Admin</h2>
+    <input id="user" placeholder="Usuario" class="w-full p-3 border rounded mb-3">
+    <input id="pass" type="password" placeholder="Contraseña" class="w-full p-3 border rounded mb-4">
+    <button onclick="login()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">Entrar</button>
+  </div>
+</div>
+
+<!-- UPLOAD -->
+<div id="upload" class="modal fixed inset-0 bg-black/60 items-center justify-center">
+  <div class="bg-white p-8 rounded-2xl w-full max-w-lg">
+    <h2 class="font-black text-xl mb-4">Nuevo Producto</h2>
+    <input id="title" placeholder="Nombre" class="w-full p-3 border rounded mb-3">
+    <input id="price" type="number" placeholder="Precio" class="w-full p-3 border rounded mb-3">
+    <select id="category" class="w-full p-3 border rounded mb-3">
+      <option>Moda</option>
+      <option>Electrónica</option>
+      <option>Accesorios</option>
+      <option>Hogar</option>
+    </select>
+    <textarea id="desc" placeholder="Descripción" class="w-full p-3 border rounded mb-3"></textarea>
+    <input id="images" type="file" multiple accept="image/*" class="mb-4">
+    <button onclick="upload()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">Publicar</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+/* 🔥 PEGA AQUÍ TU CONFIG DE FIREBASE */
+const firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_DOMINIO.firebaseapp.com",
+  projectId: "TU_PROJECT_ID",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+await signInAnonymously(auth);
+
+let products = [];
+let admin = false;
+
+onSnapshot(collection(db,"products"), snap=>{
+  products = snap.docs.map(d=>({id:d.id,...d.data()}));
+  render();
+});
+
+window.render = ()=>{
+  const q = search.value.toLowerCase();
+  const list = products.filter(p=>p.title.toLowerCase().includes(q));
+  productsDiv.innerHTML = list.map(p=>`
+    <div class="bg-white rounded-2xl shadow p-4">
+      <img src="${p.images[0]}" class="aspect-[4/5] object-cover rounded-xl mb-3">
+      <h3 class="font-bold">${p.title}</h3>
+      <p class="text-red-600 font-black">$${p.price}</p>
     </div>
+  `).join("");
+  empty.classList.toggle("hidden",list.length);
+};
 
-    <!-- Modal Detalle -->
-    <div id="detailModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
-        <div class="relative w-full max-w-5xl bg-white rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row max-h-[90vh] shadow-2xl">
-            <button onclick="toggleModal('detailModal', false)" class="absolute top-6 right-6 z-10 p-3 bg-white/20 text-white rounded-full">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-            <div class="md:flex-1 bg-slate-100 flex items-center justify-center p-4 overflow-hidden">
-                <img id="detailImg" src="" class="max-w-full max-h-full object-contain rounded-xl">
-            </div>
-            <div class="md:w-[450px] p-10 flex flex-col bg-white overflow-y-auto">
-                <span id="detailCat" class="text-red-600 font-extrabold text-xs uppercase tracking-[0.2em] mb-3">CATEGORÍA</span>
-                <h2 id="detailTitle" class="text-4xl font-extrabold text-slate-900 mb-4">Nombre</h2>
-                <div id="detailPrice" class="text-3xl font-bold text-slate-800 mb-8">$0.00</div>
-                <p id="detailDesc" class="text-slate-500 leading-relaxed text-lg border-t pt-8">Descripción...</p>
-                <div class="mt-auto pt-10">
-                    <button class="w-full py-5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-red-600 transition-all text-lg">Contactar</button>
-                </div>
-            </div>
-        </div>
-    </div>
+window.login = ()=>{
+  if(user.value==="admin" && pass.value==="admin"){
+    admin=true;
+    uploadBtn.classList.remove("hidden");
+    toggleModal("login",false);
+  }
+};
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+window.upload = async ()=>{
+  const files=[...images.files];
+  const imgs=[];
+  for(const f of files){
+    imgs.push(await new Promise(r=>{
+      const fr=new FileReader();
+      fr.onload=e=>r(e.target.result);
+      fr.readAsDataURL(f);
+    }));
+  }
+  await addDoc(collection(db,"products"),{
+    title:title.value,
+    price:Number(price.value),
+    category:category.value,
+    desc:desc.value,
+    images:imgs,
+    createdAt:Date.now()
+  });
+  toggleModal("upload",false);
+};
 
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kindo-mall-default';
+window.toggleModal=(id,show)=>{
+  document.getElementById(id).classList.toggle("show",show);
+};
 
-        let products = [];
-        let currentFilter = 'Todos';
-        let isAdmin = false;
-        let base64Images = [];
+lucide.createIcons();
+</script>
 
-        // Auth Init
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Auth error:", error);
-            }
-        };
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) listenToProducts();
-        });
-
-        function listenToProducts() {
-            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'products');
-            onSnapshot(colRef, (snapshot) => {
-                products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderProducts();
-            }, (error) => {
-                console.error("Firestore error:", error);
-            });
-        }
-
-        window.renderProducts = () => {
-            const grid = document.getElementById('productGrid');
-            const searchInput = document.getElementById('searchInput');
-            const search = searchInput ? searchInput.value.toLowerCase() : "";
-            const empty = document.getElementById('emptyState');
-            
-            const filtered = products.filter(p => {
-                const matchesCat = currentFilter === 'Todos' || p.category === currentFilter;
-                const matchesSearch = p.title.toLowerCase().includes(search);
-                return matchesCat && matchesSearch;
-            });
-
-            if(filtered.length === 0) {
-                grid.classList.add('hidden');
-                empty.classList.remove('hidden');
-                document.getElementById('statusTitle').innerText = products.length === 0 ? "Catálogo vacío" : "Sin resultados";
-            } else {
-                grid.classList.remove('hidden');
-                empty.classList.add('hidden');
-                grid.innerHTML = filtered.map(p => `
-                    <div class="product-card group bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-slate-100 flex flex-col h-full">
-                        <div class="relative aspect-[4/5] overflow-hidden bg-slate-50">
-                            <img src="${p.img}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
-                            <div class="action-buttons absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3 translate-y-4">
-                                <button onclick="openDetail('${p.id}')" class="p-4 bg-white rounded-2xl text-slate-900 hover:bg-red-50 transition-colors">
-                                    <i data-lucide="eye" class="w-6 h-6"></i>
-                                </button>
-                                ${isAdmin ? `
-                                <button onclick="deleteProduct('${p.id}')" class="p-4 bg-red-500 text-white rounded-2xl hover:bg-red-600 transition-colors">
-                                    <i data-lucide="trash-2" class="w-6 h-6"></i>
-                                </button>
-                                ` : ''}
-                            </div>
-                            <div class="absolute top-5 left-5">
-                                <span class="px-4 py-1.5 bg-white/90 backdrop-blur rounded-full text-[10px] font-black text-slate-800 uppercase tracking-widest">${p.category}</span>
-                            </div>
-                        </div>
-                        <div class="p-7 flex flex-col flex-grow">
-                            <div class="flex justify-between items-start mb-3">
-                                <h3 class="font-extrabold text-xl text-slate-800 leading-tight">${p.title}</h3>
-                                <span class="text-red-600 font-black text-xl">$${p.price}</span>
-                            </div>
-                            <button onclick="openDetail('${p.id}')" class="mt-auto w-full py-3.5 bg-slate-50 hover:bg-red-600 hover:text-white text-slate-600 font-bold rounded-xl transition-all flex items-center justify-center gap-2">
-                                Ver Detalles <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-                lucide.createIcons();
-            }
-        };
-
-        // Login Action
-        document.getElementById('loginForm').onsubmit = (e) => {
-            e.preventDefault();
-            const u = document.getElementById('loginUser').value;
-            const p = document.getElementById('loginPass').value;
-            
-            if(u === "admin" && p === "admin") {
-                isAdmin = true;
-                document.getElementById('adminIndicator').classList.remove('hidden');
-                document.getElementById('uploadBtn').classList.remove('hidden');
-                document.getElementById('loginBtnText').innerText = "Cerrar Sesión";
-                toggleModal('loginModal', false);
-                renderProducts();
-            } else {
-                alert("Credenciales incorrectas");
-            }
-        };
-
-        window.deleteProduct = async (id) => {
-            if(!isAdmin || !auth.currentUser) return;
-            if(!confirm("¿Eliminar producto?")) return;
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id));
-            } catch (e) { console.error(e); }
-        };
-
-        document.getElementById('uploadForm').onsubmit = async (e) => {
-            e.preventDefault();
-            if(!isAdmin || !auth.currentUser) return;
-            if (base64Images.length === 0) return alert("Sube fotos");
-
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true;
-            btn.innerText = "Subiendo...";
-
-            try {
-                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'products');
-                for (const imgData of base64Images) {
-                    await addDoc(colRef, {
-                        title: document.getElementById('formTitle').value,
-                        category: document.getElementById('formCategory').value,
-                        price: document.getElementById('formPrice').value,
-                        desc: document.getElementById('formDesc').value,
-                        img: imgData,
-                        createdAt: Date.now(),
-                        userId: auth.currentUser.uid
-                    });
-                }
-                toggleModal('uploadModal', false);
-                resetPhotos();
-            } catch (e) {
-                console.error(e);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Publicar Producto";
-            }
-        };
-
-        window.previewImages = (input) => {
-            const grid = document.getElementById('previewGrid');
-            const content = document.getElementById('dropzoneContent');
-            const resetBtn = document.getElementById('resetPhotosBtn');
-            grid.innerHTML = '';
-            base64Images = [];
-            if (input.files) {
-                grid.classList.remove('hidden');
-                content.classList.add('hidden');
-                resetBtn.classList.remove('hidden');
-                Array.from(input.files).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        base64Images.push(e.target.result);
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.className = 'w-full aspect-square object-cover rounded-xl';
-                        grid.appendChild(img);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
-        };
-
-        window.resetPhotos = () => {
-            document.getElementById('fileInput').value = "";
-            const grid = document.getElementById('previewGrid');
-            const content = document.getElementById('dropzoneContent');
-            const resetBtn = document.getElementById('resetPhotosBtn');
-            if(grid) grid.innerHTML = '';
-            if(grid) grid.classList.add('hidden');
-            if(content) content.classList.remove('hidden');
-            if(resetBtn) resetBtn.classList.add('hidden');
-            base64Images = [];
-        };
-
-        window.setFilter = (cat) => {
-            currentFilter = cat;
-            renderCategories();
-            renderProducts();
-        };
-
-        window.renderCategories = () => {
-            const categories = ['Todos', 'Moda', 'Electrónica', 'Accesorios', 'Hogar'];
-            const container = document.getElementById('categoryContainer');
-            container.innerHTML = categories.map(cat => `
-                <button onclick="setFilter('${cat}')" 
-                    class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                    currentFilter === cat ? 'bg-red-600 text-white' : 'bg-white text-slate-500 border border-slate-200 shadow-sm'
-                }">${cat}</button>
-            `).join('');
-        };
-
-        window.toggleModal = (id, show) => {
-            const modal = document.getElementById(id);
-            if (show) modal.classList.remove('hidden');
-            else {
-                modal.classList.add('hidden');
-                if(id === 'uploadModal') document.getElementById('uploadForm').reset();
-                if(id === 'loginModal') document.getElementById('loginForm').reset();
-            }
-        };
-
-        window.openDetail = (id) => {
-            const p = products.find(prod => prod.id === id);
-            if(!p) return;
-            document.getElementById('detailImg').src = p.img;
-            document.getElementById('detailTitle').innerText = p.title;
-            document.getElementById('detailCat').innerText = p.category;
-            document.getElementById('detailPrice').innerText = `$${p.price}`;
-            document.getElementById('detailDesc').innerText = p.desc || 'Producto exclusivo de Kindo Mall.';
-            toggleModal('detailModal', true);
-        };
-
-        // START
-        initAuth();
-        renderCategories();
-        lucide.createIcons();
-
-    </script>
 </body>
-</html
+</html>
